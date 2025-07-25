@@ -1,0 +1,10 @@
+[submodule "vendor/glm"]
+	path = vendor/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "vendor/cglm"]
+	path = vendor/cglm
+	url = https://github.com/recp/cglm.git
+[submodule "vendor/imgui"]
+	path = vendor/imgui
+	url = https://github.com/ocornut/imgui.git
+	branch = docking

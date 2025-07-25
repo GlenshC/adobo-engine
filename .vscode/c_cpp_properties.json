@@ -1,0 +1,35 @@
+{
+  "configurations": [
+    {
+      "name": "Win64",
+      "includePath": [
+        "${workspaceFolder}/src",
+        "${workspaceFolder}/include",
+        "${workspaceFolder}/vendor/glad/include",
+        "${workspaceFolder}/vendor/stb_image/include",
+        "${workspaceFolder}/vendor/GLFW/include",
+        "${workspaceFolder}/vendor/cglm",
+        "${workspaceFolder}/vendor/imgui",
+        "${workspaceFolder}/**"
+      ],
+      "defines": ["_CRT_SECURE_NO_WARNINGS", "GLFW_INCLUDE_NONE"],
+      "compilerPath": "clang",
+      "cStandard": "c99",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "windows-clang-x64",
+      "browse": {
+        "path": [
+          "${workspaceFolder}/src",
+          "${workspaceFolder}/include",
+          "${workspaceFolder}/vendor/glad/include",
+          "${workspaceFolder}/vendor/stb_image/include",
+          "${workspaceFolder}/vendor/cglm",
+          "${workspaceFolder}/vendor/imgui",
+          "${workspaceFolder}/vendor/GLFW/include"
+        ],
+        "limitSymbolsToIncludedHeaders": true
+      }
+    }
+  ],
+  "version": 4
+}
