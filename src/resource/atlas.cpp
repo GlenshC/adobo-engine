@@ -2,7 +2,7 @@
 #include <ggb/cglm.h>
 #include <glad/gl.h>
 
-#include "util/logger.h"
+#include "util/debug.h"
 
 static const char *s_atlas_slots[] = {
     "u_atlas_info[0]",

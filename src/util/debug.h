@@ -15,9 +15,12 @@
 #   include <cstdio>
 #   define STRFY(x) #x
 #   define STR(x) STRFY(x)
-#   define DEBUG_LOG(format_str, ...)   printf("%-32s: " TERMINAL_CYAN format_str TERMINAL_RESET , __FILE__ ":" STR(__LINE__) ,##__VA_ARGS__)
-#   define DEBUG_ERR(format_str, ...)  fprintf(stderr, "%-32s: " TERMINAL_RED format_str TERMINAL_RESET, __FILE__ ":" STR(__LINE__) , ##__VA_ARGS__);
+#   define DEBUG_FILE_LINE (__FILE__ ":" STR(__LINE__))
+#   define DEBUG_LOG(format_str, ...)   printf("%-32s: " TERMINAL_CYAN format_str TERMINAL_RESET , DEBUG_FILE_LINE ,##__VA_ARGS__)
+#   define DEBUG_ERR(format_str, ...)  fprintf(stderr, "%-32s: " TERMINAL_RED format_str TERMINAL_RESET, DEBUG_FILE_LINE , ##__VA_ARGS__);
+#   define DEBUG_IF(condition, body)    if ((condition)) body
 #else
 #   define DEBUG_LOG(format_str, ...)
 #   define DEBUG_ERR(format_str, ...)
+#   define DEBUG_IF(condition, body)
 #endif 

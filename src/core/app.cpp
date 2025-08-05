@@ -9,7 +9,7 @@
 #include "renderer/renderer.h"
 #include "renderer/shader.h"
 
-#include "util/logger.h"
+#include "util/debug.h"
 
 namespace core
 {

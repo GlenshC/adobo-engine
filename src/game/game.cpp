@@ -5,7 +5,7 @@
 #include "renderer/shader.h"
 #include "renderer/r_sprite.h"
 
-#include "util/logger.h"
+#include "util/debug.h"
 
 static shader::Shader           s_sprite_shader;
 static mat4                     u_projection = GLM_MAT2_IDENTITY_INIT;

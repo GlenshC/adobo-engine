@@ -1,7 +1,7 @@
 #include "core/clock.h"
 #include "core/platform.h"
 
-#include "util/logger.h"
+#include "util/debug.h"
 namespace clk 
 {
     TimeState g_time;

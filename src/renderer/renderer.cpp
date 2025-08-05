@@ -1,5 +1,5 @@
 #include "renderer/renderer.h"
-#include "util/logger.h"
+#include "util/debug.h"
 #include <glad/gl.h>
 
 static u32 s_test_triangle_vao;

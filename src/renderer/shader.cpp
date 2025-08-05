@@ -3,7 +3,7 @@
 
 #include "shader.h"
 #include "util/string.h"
-#include "util/logger.h"
+#include "util/debug.h"
 
 namespace shader
 {

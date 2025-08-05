@@ -3,7 +3,7 @@
 #include "resource/atlas.h"
 // #include "shader.h"
 
-#include "util/logger.h"
+#include "util/debug.h"
 #include <iostream>
 namespace renderer 
 {
@@ -41,8 +41,6 @@ namespace renderer
     void begin_sprites(RState_Sprites& batch)
     {
         reset_sprites(batch);
-        // batch.sprite_count = 0;
-        // batch.tex_count = 0;
     }
 
     void submit_sprites(RState_Sprites &batch, RSprite &sprite)
@@ -54,7 +52,6 @@ namespace renderer
         
         if (batch.sprite_count >= MAX_SPRITES) 
         {
-            DEBUG_LOG("overflow_first\n");
             end_sprites(batch);
 
             tex_index = batch.tex_count;
@@ -92,7 +89,7 @@ namespace renderer
 
         batch.data[data_index].tex_id = tex_index;
         batch.data[data_index].uv_index = sprite.uv_index;
-        batch.sprites[data_index] = sprite.transform;
+        batch.sprites_arr[data_index] = sprite.transform;
         batch.sprite_count++;
     }
     
@@ -108,7 +105,7 @@ namespace renderer
         for (i32 i = 0; i < batch.sprite_count; i++)
         {
             RData_S     &data   = batch.data[i];
-            Transform2D &sprite = batch.sprites[i];
+            Xf2Dref sprite = batch.sprites_arr[i];
             glm_translate_to(
                 GLM_MAT4_IDENTITY, 
                 (vec3){sprite.position[0], sprite.position[1], 0},
@@ -116,12 +113,6 @@ namespace renderer
             );
             glm_rotate(data.model, glm_rad(sprite.rotation), (vec3){0.0f, 0.0f, 1.0f});
             glm_scale(data.model, (vec3){sprite.scale[0], sprite.scale[1], 0});
-
-            // DEBUG_LOG("pos: %6.1f %6.1f scale: %6.1f %6.1f uv: %d tex: %d\n", 
-            //     sprite.position.x, sprite.position.y,
-            //     sprite.scale.x, sprite.scale.y,
-            //     data.uv_index, data.tex_id
-            // );
         }
         
         glNamedBufferSubData(batch.ssbo, 0, batch.sprite_count* sizeof(RData_S), batch.data);

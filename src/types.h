@@ -16,7 +16,7 @@ typedef int64_t i64;
 typedef float f32;
 typedef double f64;
 
-namespace mtrx
+namespace adobo
 {
     struct vec2f
     {
