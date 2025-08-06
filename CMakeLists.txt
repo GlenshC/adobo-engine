@@ -83,18 +83,23 @@ add_subdirectory(vendor/cglm/ EXCLUDE_FROM_ALL)
 # ===============================
 add_executable(${PROJECT_NAME}
     src/main.cpp
+    
     src/game/game.cpp
     src/game/gui.cpp
+    
+    src/core/entity/ecs.cpp
     src/core/app.cpp
     src/core/platform.cpp
     src/core/clock.cpp
-    src/renderer/r_sprite.cpp
+
+    src/renderer/sprite2D.cpp
     src/renderer/renderer.cpp
-    src/renderer/texture.cpp
-    src/renderer/shader.cpp
+
+    src/resource/graphics/texture.cpp
+    src/resource/graphics/shader.cpp
+    
     src/util/mem_arena.cpp
     src/util/string.cpp
-    src/resource/atlas.cpp
 
     # ADD MORE FILES HERE
 )

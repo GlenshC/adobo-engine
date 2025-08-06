@@ -31,7 +31,9 @@
         "string_view": "cpp",
         "span": "cpp",
         "iostream": "cpp",
-        "shader.h": "c"
+        "shader.h": "c",
+        "text_encoding": "cpp",
+        "thread": "cpp"
     },
     "C_Cpp.default.compilerPath": "clang",
     "explorer.sortOrder": "type"

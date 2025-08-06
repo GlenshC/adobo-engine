@@ -1,7 +1,7 @@
 #include <cstdio>
 #include <glad/gl.h>
 
-#include "shader.h"
+#include "resource/graphics/shader.h"
 #include "util/string.h"
 #include "util/debug.h"
 
@@ -31,6 +31,11 @@ namespace shader
     void bind(Shader &shader)
     {
         glUseProgram(shader.id);
+    }
+    
+    void bind(u32 shader_id)
+    {
+        glUseProgram(shader_id);
     }
 
     void unbind(void)

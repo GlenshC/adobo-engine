@@ -28,10 +28,10 @@ void main() {
 
     vec4 info = u_atlas_info[i_texture_id];
 
-    float tile_w  = info.x;
-    float tile_h  = info.y;
-    float atlas_w = info.z;
-    float atlas_h = info.w;
+    float atlas_w = info.x;
+    float atlas_h = info.y;
+    float tile_w  = info.z;
+    float tile_h  = info.w;
 
     int columns = int(atlas_w / tile_w);
     int rows    = int(atlas_h / tile_h);

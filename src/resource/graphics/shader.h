@@ -4,15 +4,17 @@
 
 namespace shader 
 {
+    
     struct Shader 
     {
         const char *vertPath;
         const char *fragPath;
         u32 id = 0;
     };
-
+    
     void create(Shader &shader, const char *vertPath, const char *fragPath);
     void bind(Shader &shader);
+    void bind(u32 shader_id);
     void unbind(void);
 
     void set_uniform_mat4(const Shader &shader, const char *name, mat4 value);
