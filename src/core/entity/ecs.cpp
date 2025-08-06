@@ -1,5 +1,5 @@
 #include "core/entity/ecs.h"
-
+#include "core/clock.h"
 namespace ecs 
 {
     Entity2DSoa<MAX_ENTITIES> g_entities;
@@ -29,6 +29,15 @@ namespace ecs
         {
             g_entities[i].transform.position.x += g_entities[i].velocity.x;
             g_entities[i].transform.position.y += g_entities[i].velocity.y;
+
+            if (clk::g_time.frame_timer[g_entities[i].frames[3]] == 0)
+            {
+                g_entities[i].frames[0]++;
+                if ( g_entities[i].frames[0] > (g_entities[i].frames[1] + g_entities[i].frames[2]))
+                {
+                    g_entities[i].frames[0] = 0;
+                }
+            }
         }
     }
 }

@@ -15,7 +15,7 @@ namespace core
 {
     void main(const char *title, int width, int height)
     {
-        platform::init(title, width, height);
+        plat::init(title, width, height);
         glClearColor(0.2f , 0.3f, 0.3f, 1.0f);
         
         clk::init();
@@ -23,12 +23,12 @@ namespace core
         game::init();
         gui::init();
         
-        while (!platform::should_close()) {
-            platform::poll_events();
+        while (!plat::should_close()) {
+            plat::poll_events();
             
             clk::update();
             // input::update();
-            game::update(0);
+            game::update(clk::g_time.delta);
             
             //test
             
@@ -36,12 +36,12 @@ namespace core
             game::render();
             gui::render();
             
-            platform::swap_buffers();
+            plat::swap_buffers();
         }
         game::shutdown();
         gui::shutdown();
         // renderer::shutdown();
-        platform::shutdown();
+        plat::shutdown();
     }
 }
 

@@ -13,7 +13,7 @@ namespace ecs
     struct Entity2Dref
     {
         core::Xform2Dref  transform;
-        adobo::vec3<u16>  &frames;
+        adobo::vec4<u16>  &frames;
         texture::Texture  &tex_id;
         adobo::vec2f      &velocity;
 
@@ -33,7 +33,7 @@ namespace ecs
     {
         core::Xform2Dsoa<MAX_E> transform         = {};
         texture::Texture        texture_id[MAX_E] = {};  // our own id not gl (TODO: REV TEX)
-        adobo::vec3<u16>        frames[MAX_E]     = {}; // curr, base, offset
+        adobo::vec4<u16>        frames[MAX_E]     = {}; // curr, base, offset, frame_rate
         adobo::vec2f            velocity[MAX_E]   = {};
         
         ggb::Sparse<MAX_E> sparse; // entity ids

@@ -3,9 +3,13 @@
 #include "imgui_impl_opengl3.h"
 #include <GLFW/glfw3.h>
 
+#include "util/debug_state.h"
+#include "util/debug.h"
 #include "core/platform.h"
 #include "core/clock.h"
 #include "core/gui.h"
+
+#include <cmath>
 
 namespace gui
 {
@@ -28,7 +32,7 @@ namespace gui
         ImGui::StyleColorsDark();
     
         // Setup ImGui Platform/Renderer bindings
-        ImGui_ImplGlfw_InitForOpenGL(platform::g_window.handle, true);
+        ImGui_ImplGlfw_InitForOpenGL(plat::g_window.handle, true);
         ImGui_ImplOpenGL3_Init("#version 330");
     }
 
@@ -66,6 +70,7 @@ namespace gui
         static f32 time_e = 0;
         static f32 fps_imgui = 0;
         static i32 fps_game = 0;
+        static f32 player_speed = 0;
         
         time_e += clk::g_time.delta;
         if (time_e >= 1.0)
@@ -74,6 +79,11 @@ namespace gui
             fps_game = clk::g_fps.fps;
             time_e = 0;
         }
+        if (std::fmodf(time_e, 0.25f) <= clk::g_time.delta)
+        {
+            player_speed = dbg::g_dbg.speed;
+        }
+
         ImGuiWindowFlags window_flags =
             ImGuiWindowFlags_NoDecoration |
             ImGuiWindowFlags_AlwaysAutoResize |
@@ -91,6 +101,7 @@ namespace gui
         {
             ImGui::Text("Game  FPS: %d", fps_game);
             ImGui::Text("ImGui FPS: %.1f", fps_imgui);
+            ImGui::Text("Speed: %.1f", player_speed);
         }
         ImGui::End();
     }

@@ -90,6 +90,7 @@ add_executable(${PROJECT_NAME}
     src/core/entity/ecs.cpp
     src/core/app.cpp
     src/core/platform.cpp
+    src/core/input.cpp
     src/core/clock.cpp
 
     src/renderer/sprite2D.cpp
@@ -100,6 +101,7 @@ add_executable(${PROJECT_NAME}
     
     src/util/mem_arena.cpp
     src/util/string.cpp
+    src/util/debug_state.cpp
 
     # ADD MORE FILES HERE
 )

@@ -5,12 +5,15 @@
 
 
 namespace clk {
+    const i32 MAX_FRAME_TIMERS = 8;
     struct TimeState
     {
-        f64     last;    
-        f64     start;
-        f64     now;     
-        f64     delta; 
+        f64     last  = 0;    
+        f64     start = 0;
+        f64     now   = 0;     
+        f64     delta = 0;
+        f32     frame_timer[MAX_FRAME_TIMERS] = {};// tracks for frame_rate
+        f32     frame_rate[MAX_FRAME_TIMERS] = {2, 4, 6, 8, 10, 12, 20, 24}; // 4hz 30hz etc
         // f64     elapsed; 
     };
 

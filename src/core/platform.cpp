@@ -4,7 +4,7 @@
 #include <GLFW/glfw3.h>
 #include "./platform.h"
 
-namespace platform 
+namespace plat 
 {
     WindowInfo g_window; 
     Window win_handle;
