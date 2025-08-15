@@ -1,7 +1,7 @@
 #include <glad/gl.h>
 #include "renderer/sprite2D.h"
 #include "core/entity/ecs.h"
-#include "resource/graphics/shader.h"
+#include "res/graphics/shader.h"
 
 namespace renderer
 {
@@ -36,13 +36,13 @@ namespace renderer
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 
-    void submit_sprites(ecs::Entity2D ent_id)
+    void submit_sprites(ecs::Entity2D &ent)
     {
         i32 tex_index = -1;
         i32 data_index = g_sprites.sprite_count;
 
-        ecs::Entity2Dref entity = ecs::g_entities(ent_id);
-        texture::Texture tex_id = entity.tex_id;
+        ecs::Entity2Dref entity = ecs::g_entities(ent);
+        texture::Texture &tex = entity.tex;
 
         if (g_sprites.sprite_count >= g_sprites.capacity)
         {
@@ -52,9 +52,13 @@ namespace renderer
         }
         else
         {
+            // texture handling
+            // tex_slot must contain texgl_id
+            // data.tex_id must contain index to tex_slot where the texgl_id is
+
             for (i32 i = 0; i < g_sprites.tex_count; i++)
             {
-                if (g_sprites.tex_slot[i] == tex_id) 
+                if (g_sprites.tex_slot[i] == tex) 
                 {
                     tex_index = i;
                     break;
@@ -70,14 +74,13 @@ namespace renderer
                     render_sprites();
                     clear_sprites();
                 }
-                tex_index = g_sprites.tex_count;
-                g_sprites.tex_slot[tex_index] = tex_id;
-                g_sprites.tex_count++;
+                tex_index = g_sprites.tex_count++;
+                g_sprites.tex_slot[tex_index] = tex;
             }
         }
-        // DEBUG_LOG("curr_frame: %hu\n", entity.frames.x);
+        
         g_sprites[data_index].curr_frame = entity.frames.x;
-        g_sprites[data_index].tex_id     = entity.tex_id;
+        g_sprites[data_index].tex_index  = tex_index;
         g_sprites[data_index].transform  = entity.transform;
         g_sprites.sprite_count++;
     }

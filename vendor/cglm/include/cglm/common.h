@@ -33,7 +33,14 @@
 #  else
 #    define CGLM_EXPORT __declspec(dllimport)
 #  endif
-#  define CGLM_INLINE __forceinline
+
+#if defined(__clang__)
+#  define CGLM_INLINE static inline __attribute__((always_inline))
+#else
+#  define CGLM_INLINE static __forceinline
+#endif
+
+// #  define CGLM_INLINE __forceinline
 #else
 #  define CGLM_EXPORT __attribute__((visibility("default")))
 #  define CGLM_INLINE static inline __attribute((always_inline))

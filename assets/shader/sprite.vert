@@ -5,7 +5,8 @@ layout(location = 1) in vec2 a_uv;
 
 struct InstanceData {
     mat4    model;
-    uint    uv_tex;
+    vec4    tex_uv;
+    uint    tex_id;
     // vec3    padding;
 };
 

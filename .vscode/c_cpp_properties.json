@@ -7,9 +7,11 @@
         "${workspaceFolder}/include",
         "${workspaceFolder}/vendor/glad/include",
         "${workspaceFolder}/vendor/stb_image/include",
+		"${workspaceFolder}/vendor/nlohmann/include",
         "${workspaceFolder}/vendor/GLFW/include",
         "${workspaceFolder}/vendor/cglm",
         "${workspaceFolder}/vendor/imgui",
+        "${workspaceFolder}/include/glnshdat/src",
         "${workspaceFolder}/**"
       ],
       "defines": ["_CRT_SECURE_NO_WARNINGS", "GLFW_INCLUDE_NONE"],
@@ -23,9 +25,11 @@
           "${workspaceFolder}/include",
           "${workspaceFolder}/vendor/glad/include",
           "${workspaceFolder}/vendor/stb_image/include",
+		      "${workspaceFolder}/vendor/nlohmann/include",
           "${workspaceFolder}/vendor/cglm",
           "${workspaceFolder}/vendor/imgui",
-          "${workspaceFolder}/vendor/GLFW/include"
+          "${workspaceFolder}/vendor/GLFW/include",
+          "${workspaceFolder}/include/glnshdat/src"
         ],
         "limitSymbolsToIncludedHeaders": true
       }

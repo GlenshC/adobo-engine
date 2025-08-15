@@ -24,6 +24,7 @@ namespace gui
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         io = &ImGui::GetIO();
+        io->IniFilename = nullptr;
         io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         io->FontGlobalScale = 1.7f;
         // io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
@@ -44,7 +45,7 @@ namespace gui
 
         // display_gui();
         RenderDebugOverlay();
-        ImGui::ShowDemoWindow(); // Optional
+        // ImGui::ShowDemoWindow(); // Optional
     
         // Render
         ImGui::Render();

@@ -4,7 +4,7 @@
 #include "types.h"
 #include "renderer/renderer.h"
 #include "components/transform.h"
-#include "resource/graphics/texture.h"
+#include "res/graphics/texture.h"
 #include "core/entity/ecs.h"
 
 #define MAX_SPRITES 200
@@ -12,25 +12,25 @@
 
 namespace renderer
 {
+    typedef u16 TexGL16;
     struct RDataSprite
     {
-        mat4 model = GLM_MAT4_IDENTITY_INIT;
-        u16  uv_index;
-        u16  tex_id = 0;
-        u32  pad[3]; // temp 
+        mat4            model     = GLM_MAT4_IDENTITY_INIT;
+        adobo::vec4f    tex_uv    = {};
+        texture::TexGL  tex_index = 0;
     };
 
     struct SpriteRef
     {
         core::Xform2Dref transform;
-        u16              &curr_frame; // internally this is uv_index
-        u16              &tex_id;
+        adobo::vec4f     &tex_uv; // internally this is uv_index
+        texture::TexGL   &tex_index;
 
         SpriteRef &operator=(SpriteRef &other)
         {
             transform  = other.transform;
-            curr_frame = other.curr_frame;
-            tex_id     = other.tex_id;
+            tex_uv     = other.tex_uv;
+            tex_index  = other.tex_index;
             return *this;
         }
     };
@@ -54,8 +54,8 @@ namespace renderer
         {
             return SpriteRef{
                 .transform  = sprites[index],
-                .curr_frame = data[index].uv_index,
-                .tex_id     = data[index].tex_id,
+                .tex_uv     = data[index].tex_uv,
+                .tex_index  = data[index].tex_index,
             };
         }
 
@@ -69,7 +69,7 @@ namespace renderer
     extern SpritesSoa<MAX_SPRITES> g_sprites;
 
     void begin_sprites(shader::Shader shader);
-    void submit_sprites(ecs::Entity2D ent_id);
+    void submit_sprites(ecs::Entity2D &ent);
     void end_sprites(void);
     
     void init_sprites(void);

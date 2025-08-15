@@ -1,0 +1,1 @@
+call binassets.exe "assets.json" "assets/bin"

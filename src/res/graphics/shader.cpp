@@ -1,20 +1,18 @@
 #include <cstdio>
 #include <glad/gl.h>
 
-#include "resource/graphics/shader.h"
+#include "res/graphics/shader.h"
 #include "util/string.h"
 #include "util/debug.h"
+
 
 namespace shader
 {
     static u32  _shader_link(u32 vert_id, u32 frag_id);
     static u32  _shader_compile(const char *source, u32 type);
 
-    void create(Shader &shader, const char *vertPath, const char *fragPath)
+    void create_fsource(Shader &shader, const char *vertSource, const char* fragSource)
     {
-        char *vertSource = util::string_readf(vertPath);
-        char *fragSource = util::string_readf(fragPath);
-
         u32 vert_id = _shader_compile(vertSource, GL_VERTEX_SHADER);
         u32 frag_id = _shader_compile(fragSource, GL_FRAGMENT_SHADER);
         if (vert_id == 0 || frag_id == 0)
@@ -23,9 +21,25 @@ namespace shader
             glDeleteShader(frag_id);
             return;
         }
+        shader.id = _shader_link(vert_id, frag_id);
+        shader.vertPath = NULL;
+        shader.fragPath = NULL;
+    }
+
+    void create(Shader &shader, const ggb::AssetShader &vert, ggb::AssetShader &frag)
+    {
+        create_fsource(shader, vert.data, frag.data);
+    }
+
+    void create(Shader &shader, const char *vertPath, const char *fragPath)
+    {
+        char *vertSource = util::string_readf(vertPath);
+        char *fragSource = util::string_readf(fragPath);
+        create_fsource(shader, vertSource, fragSource);
         shader.vertPath = vertPath;
         shader.fragPath = fragPath;
-        shader.id = _shader_link(vert_id, frag_id);
+        free(vertSource);
+        free(fragSource);
     }
 
     void bind(Shader &shader)

@@ -1,0 +1,13 @@
+{
+  "imgs": [
+    { "path": "./assets/sprites/metrix_tex.png", "key": "METRIX" },
+    { "path": "./assets/sprites/texture.png", "key": "BALL" }
+  ],
+  "atlases": [
+    { "path": "./assets/sprites/sprites.xml", "key": "SHOOT"}
+  ],
+  "shaders": [
+    { "path": "./assets/shader/sprite.frag", "key": "SPRITE_F" },
+    { "path": "./assets/shader/sprite.vert", "key": "SPRITE_V" }
+  ]
+}

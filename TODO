@@ -1,0 +1,7 @@
+todo ecs and texture should support manual uvs and not just a uv_index
+todo utilize compute shaders to our advantage
+todo binary asset compiler must output a enum for accessing the assets // DONE
+
+TODO add suport for ggb::AssetAtlas texture
+TODO change sprite.vert to support texture uvs
+TODO add ecs set uv_index or something that will calculate the texture uv on the fly 

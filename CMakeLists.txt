@@ -17,7 +17,7 @@ set(GLFW_ROOT_DIR "${CMAKE_SOURCE_DIR}/vendor/GLFW")
 set(GLFW_INCLUDE_DIR "${GLFW_ROOT_DIR}/include")
 set(GLFW_LIB_DIR "")
 
-if (MSVC)
+if (MSVC OR (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND WIN32 AND NOT MINGW))
     set(GLFW_LIB_DIR "${GLFW_ROOT_DIR}/lib-vc2022")
 else()
     set(GLFW_LIB_DIR "${GLFW_ROOT_DIR}/lib-mingw-w64")
@@ -53,7 +53,10 @@ find_package(OpenGL REQUIRED)
 # ===============================
 add_compile_options(-fmacro-prefix-map=${CMAKE_SOURCE_DIR}/=)
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
-    add_compile_options(-Wall -Wextra -Werror)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    endif()
+    add_compile_options(-Wall -Wextra -Werror )
     set(CMAKE_CXX_FLAGS_DEBUG   "-g -O0")
     set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
@@ -61,6 +64,7 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set(CMAKE_CXX_FLAGS_DEBUG   "/Od /Zi")
     set(CMAKE_CXX_FLAGS_RELEASE "/O2")
 endif()
+
 
 # ===============================
 # 🔧 Global macros (if needed)
@@ -76,6 +80,7 @@ set_target_properties(glad PROPERTIES LINKER_LANGUAGE C)
 target_include_directories(glad PUBLIC vendor/glad/include)
 
 add_subdirectory(vendor/cglm/ EXCLUDE_FROM_ALL)
+add_subdirectory(include/glnshdat)
 
 
 # ===============================
@@ -93,16 +98,19 @@ add_executable(${PROJECT_NAME}
     src/core/input.cpp
     src/core/clock.cpp
 
+    src/core/math/collisions.cpp
+
     src/renderer/sprite2D.cpp
     src/renderer/renderer.cpp
 
-    src/resource/graphics/texture.cpp
-    src/resource/graphics/shader.cpp
+    src/res/graphics/texture.cpp
+    src/res/graphics/shader.cpp
     
     src/util/mem_arena.cpp
     src/util/string.cpp
     src/util/debug_state.cpp
 
+    # include/ggb/imgbin.cpp
     # ADD MORE FILES HERE
 )
     
@@ -145,6 +153,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     vendor/glad/include
     vendor/stb_image/include
     vendor/cglm/include
+    vendor/nlohmann/include
+    include/glnshdat/src
 )
 
 target_link_libraries(${PROJECT_NAME}
@@ -154,3 +164,4 @@ target_link_libraries(${PROJECT_NAME}
     imgui
     OpenGL::GL
 )
+

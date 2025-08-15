@@ -1,7 +1,7 @@
 #pragma once
 // #include <vector>
 #include "types.h"
-#include "resource/graphics/shader.h"
+#include "res/graphics/shader.h"
 
 #define MAX_TEX_SLOTS 16
 

@@ -23,8 +23,8 @@ msvc:
 	cmake --build build --config Release
 
 release:
-	cmake -Bbuild -A X64 -DCMAKE_BUILD_TYPE=Release -DBUILD_CLI=OFF
-	cmake --build build --config Release
+	cmake -G "MinGW Makefiles" -Bbuild -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Release -DBUILD_CLI=OFF
+	cmake --build build
 
 clean:
 	rm -rf build

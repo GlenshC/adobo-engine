@@ -57,6 +57,15 @@ namespace adobo
         {
             return ((f32 *)this)[i];
         }
+
+        vec2f& low()
+        {
+            return *((vec2f *)&x);
+        }
+        vec2f& high()
+        {
+            return *((vec2f *)&z);
+        }
     };
 
     //templated
