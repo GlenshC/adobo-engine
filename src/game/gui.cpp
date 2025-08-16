@@ -8,6 +8,7 @@
 #include "core/platform.h"
 #include "core/clock.h"
 #include "core/gui.h"
+#include "core/game.h"
 
 #include <cmath>
 
@@ -44,7 +45,8 @@ namespace gui
         ImGui::NewFrame();
 
         // display_gui();
-        RenderDebugOverlay();
+        // RenderDebugOverlay();
+        game::gui();
         // ImGui::ShowDemoWindow(); // Optional
     
         // Render
@@ -66,12 +68,11 @@ namespace gui
         ImGui::DestroyContext();
     }
 
-    static void RenderDebugOverlay(void)
+    __attribute__((unused)) static void RenderDebugOverlay(void)
     {
         static f32 time_e = 0;
         static f32 fps_imgui = 0;
         static i32 fps_game = 0;
-        static f32 player_speed = 0;
         
         time_e += clk::g_time.delta;
         if (time_e >= 1.0)
@@ -79,10 +80,6 @@ namespace gui
             fps_imgui = io->Framerate;
             fps_game = clk::g_fps.fps;
             time_e = 0;
-        }
-        if (std::fmodf(time_e, 0.25f) <= clk::g_time.delta)
-        {
-            player_speed = dbg::g_dbg.speed;
         }
 
         ImGuiWindowFlags window_flags =
@@ -102,7 +99,6 @@ namespace gui
         {
             ImGui::Text("Game  FPS: %d", fps_game);
             ImGui::Text("ImGui FPS: %.1f", fps_imgui);
-            ImGui::Text("Speed: %.1f", player_speed);
         }
         ImGui::End();
     }

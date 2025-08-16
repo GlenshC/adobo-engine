@@ -5,4 +5,5 @@ namespace game {
     void update(double dTime);
     void render(void);
     void shutdown(void);
+    void gui();
 }

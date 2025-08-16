@@ -7,14 +7,13 @@
         "${workspaceFolder}/include",
         "${workspaceFolder}/vendor/glad/include",
         "${workspaceFolder}/vendor/stb_image/include",
-		"${workspaceFolder}/vendor/nlohmann/include",
         "${workspaceFolder}/vendor/GLFW/include",
+        "${workspaceFolder}/vendor/binassets/include",
         "${workspaceFolder}/vendor/cglm",
         "${workspaceFolder}/vendor/imgui",
-        "${workspaceFolder}/include/glnshdat/src",
         "${workspaceFolder}/**"
       ],
-      "defines": ["_CRT_SECURE_NO_WARNINGS", "GLFW_INCLUDE_NONE"],
+      "defines": ["_CRT_SECURE_NO_WARNINGS", "GLFW_INCLUDE_NONE", "ADOBO_GAME_ENGINE"],
       "compilerPath": "clang",
       "cStandard": "c99",
       "cppStandard": "c++17",
@@ -25,11 +24,10 @@
           "${workspaceFolder}/include",
           "${workspaceFolder}/vendor/glad/include",
           "${workspaceFolder}/vendor/stb_image/include",
-		      "${workspaceFolder}/vendor/nlohmann/include",
+          "${workspaceFolder}/vendor/binassets/include",
           "${workspaceFolder}/vendor/cglm",
           "${workspaceFolder}/vendor/imgui",
-          "${workspaceFolder}/vendor/GLFW/include",
-          "${workspaceFolder}/include/glnshdat/src"
+          "${workspaceFolder}/vendor/GLFW/include"
         ],
         "limitSymbolsToIncludedHeaders": true
       }

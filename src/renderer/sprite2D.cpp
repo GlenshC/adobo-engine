@@ -79,7 +79,7 @@ namespace renderer
             }
         }
         
-        g_sprites[data_index].curr_frame = entity.frames.x;
+        g_sprites[data_index].tex_uv     = entity.tex_uv;
         g_sprites[data_index].tex_index  = tex_index;
         g_sprites[data_index].transform  = entity.transform;
         g_sprites.sprite_count++;
@@ -107,6 +107,7 @@ namespace renderer
     {
         for (i32 i = 0; i < g_sprites.sprite_count; i++)
         {
+            mat4 rot;
             RDataSprite &data       = g_sprites.data[i];
             core::Xform2Dref sprite = g_sprites.sprites[i];
             glm_translate_to(
@@ -114,7 +115,8 @@ namespace renderer
                 (vec3){sprite.position[0], sprite.position[1], 0},
                 data.model
             );
-            glm_rotate(data.model, glm_rad(sprite.rotation), (vec3){0.0f, 0.0f, 1.0f});
+            glm_euler_xyz(sprite.rotation, rot);
+            glm_mat4_mul(data.model, rot, data.model);
             glm_scale(data.model, (vec3){sprite.scale[0], sprite.scale[1], 0});
         }
         
@@ -127,7 +129,7 @@ namespace renderer
 
         for (i32 i = 0; i < g_sprites.tex_count; i++)
         {
-            texture::bindAtlas2D(g_sprites.shader_id, g_sprites.tex_slot[i], i);
+            texture::bindAtlas2D(g_sprites.tex_slot[i], g_sprites.shader_id, i);
         }
         glBindVertexArray(g_sprites.vao);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, g_sprites.ssbo);

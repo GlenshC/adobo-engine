@@ -30,6 +30,11 @@ namespace adobo
         {
             return ((f32 *)this)[i];
         }
+        
+        operator f32*()
+        {
+            return (f32 *)this;
+        }
     };
 
     struct vec3f
@@ -44,6 +49,11 @@ namespace adobo
         {
             return ((f32 *)this)[i];
         }
+
+        operator f32*()
+        {
+            return (f32 *)this;
+        }
     };
     struct vec4f
     {
@@ -57,14 +67,10 @@ namespace adobo
         {
             return ((f32 *)this)[i];
         }
-
-        vec2f& low()
+        
+        operator f32*()
         {
-            return *((vec2f *)&x);
-        }
-        vec2f& high()
-        {
-            return *((vec2f *)&z);
+            return (f32 *)this;
         }
     };
 
@@ -82,6 +88,11 @@ namespace adobo
         {
             return ((T *)this)[i];
         }
+        
+        operator f32*()
+        {
+            return (f32 *)this;
+        }
     };
 
     template<typename T>
@@ -97,6 +108,11 @@ namespace adobo
         {
             return ((T *)this)[i];
         }
+        
+        operator f32*()
+        {
+            return (f32 *)this;
+        }
     };
 
     template<typename T>
@@ -111,6 +127,11 @@ namespace adobo
         const T& operator[](size_t i) const
         {
             return ((T *)this)[i];
+        }
+        
+        operator f32*()
+        {
+            return (f32 *)this;
         }
     };
 }

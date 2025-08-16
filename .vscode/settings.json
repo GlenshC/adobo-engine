@@ -110,7 +110,8 @@
         "xmemory": "cpp",
         "xtr1common": "cpp",
         "xtree": "cpp",
-        "xutility": "cpp"
+        "xutility": "cpp",
+        "types.h": "cpp"
     },
     "C_Cpp.default.compilerPath": "clang",
     "explorer.sortOrder": "type"

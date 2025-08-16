@@ -1,1 +1,1 @@
-call binassets.exe "assets.json" "assets/bin"
+call binassets_exe.exe "assets.json" "assets/bin"

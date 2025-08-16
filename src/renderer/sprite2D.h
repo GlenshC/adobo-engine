@@ -9,7 +9,6 @@
 
 #define MAX_SPRITES 200
 
-
 namespace renderer
 {
     typedef u16 TexGL16;
@@ -23,7 +22,7 @@ namespace renderer
     struct SpriteRef
     {
         core::Xform2Dref transform;
-        adobo::vec4f     &tex_uv; // internally this is uv_index
+        adobo::vec4f     &tex_uv; 
         texture::TexGL   &tex_index;
 
         SpriteRef &operator=(SpriteRef &other)
@@ -34,7 +33,6 @@ namespace renderer
             return *this;
         }
     };
-
 
     template<i32 MAX_S>
     struct SpritesSoa
@@ -70,6 +68,13 @@ namespace renderer
 
     void begin_sprites(shader::Shader shader);
     void submit_sprites(ecs::Entity2D &ent);
+    template<i32 N>
+    void submit_sprites(ecs::Entity2DGroup<N> &ent)
+    {
+        for (int i=0; i < N; i++)
+            submit_sprites(ent.data[i]);
+    }
+
     void end_sprites(void);
     
     void init_sprites(void);

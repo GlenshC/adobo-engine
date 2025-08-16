@@ -1,6 +1,6 @@
 #pragma once
 #include "ggb/cglm.h"
-#include "imgbin.h"
+#include "binassets/binasset_read.h"
 #include "types.h"
 
 namespace shader 

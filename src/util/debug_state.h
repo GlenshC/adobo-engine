@@ -6,7 +6,7 @@ namespace dbg
 {
     struct DebugState
     {
-        f32 speed;        
+        f32 rotation;        
     };
 
     extern DebugState g_dbg;

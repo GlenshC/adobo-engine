@@ -69,8 +69,7 @@ endif()
 # ===============================
 # 🔧 Global macros (if needed)
 # ===============================
-# add_compile_definitions(MY_MACRO=1)
-
+add_compile_definitions(ADOBO_GAME_ENGINE)
 
 # ===============================
 # 🧱 Libraries
@@ -80,8 +79,7 @@ set_target_properties(glad PROPERTIES LINKER_LANGUAGE C)
 target_include_directories(glad PUBLIC vendor/glad/include)
 
 add_subdirectory(vendor/cglm/ EXCLUDE_FROM_ALL)
-add_subdirectory(include/glnshdat)
-
+# add_subdirectory(vendor/binassets)
 
 # ===============================
 # 🚀 Executable
@@ -110,8 +108,7 @@ add_executable(${PROJECT_NAME}
     src/util/string.cpp
     src/util/debug_state.cpp
 
-    # include/ggb/imgbin.cpp
-    # ADD MORE FILES HERE
+    vendor/binassets/src/binasset_read.cpp
 )
     
     
@@ -153,8 +150,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     vendor/glad/include
     vendor/stb_image/include
     vendor/cglm/include
-    vendor/nlohmann/include
-    include/glnshdat/src
+    vendor/binassets/include
 )
 
 target_link_libraries(${PROJECT_NAME}

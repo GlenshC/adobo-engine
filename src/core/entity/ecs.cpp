@@ -4,9 +4,22 @@ namespace ecs
 {
     Entity2DSoa<MAX_ENTITIES> g_entities;
 
-    Entity2D create_entity(void)
+
+    Entity2Dref create(Entity2D &entity_out)
     {
-        return {g_entities.sparse.create_id()};
+        return create_entity(entity_out);    
+    }
+    
+    Entity2Dref create(Entity2D &entity_out, texture::Texture &tex, adobo::vec4f &tex_uv, f32 pos_x, f32 pos_y, f32 scale_x, f32 scale_y)
+    {
+        auto data = create_entity(entity_out);
+        data.tex = tex;
+        data.tex_uv = tex_uv;
+        data.position.x = pos_x;
+        data.position.y = pos_y;
+        data.scale.x = scale_x;
+        data.scale.y = scale_y;
+        return entity_out();
     }
 
     Entity2Dref create_entity(Entity2D &entity_out)

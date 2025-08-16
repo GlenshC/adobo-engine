@@ -12,27 +12,37 @@ namespace ecs
 
     struct Entity2Dref
     {
+        core::Xform2Dref  transform;
         adobo::vec2f      &position;
         adobo::vec2f      &scale;
-        f32               &rotation;
+        adobo::vec3f      &rotation;
         adobo::vec4<i16>  &frames;
         texture::Texture  &tex;
+        adobo::vec4f      &tex_uv;
         adobo::vec2f      &velocity;
         f32               &radius;
 
         Entity2Dref& operator=(const Entity2Dref& other)
         {
+            transform = other.transform;
             position  = other.position;
             scale     = other.scale;
             rotation  = other.rotation;
             frames    = other.frames;
             tex       = other.tex;
+            tex_uv    = other.tex_uv;
             velocity  = other.velocity;
             radius    = other.radius;
             
             return  *this;
         }
     };
+
+    /* 
+        
+    
+    
+    */
     
     struct Entity2D
     {
@@ -40,8 +50,8 @@ namespace ecs
 
         inline Entity2Dref operator()(void);
     };
-    
-    
+
+
     template<i32 MAX_E>
     struct Entity2DSoa 
     {
@@ -78,11 +88,13 @@ namespace ecs
         Entity2Dref operator[](i32 index)
         {
             return Entity2Dref{
+                .transform = transform[index],
                 .position  = transform[index].position,
                 .scale     = transform[index].scale,
                 .rotation  = transform[index].rotation,
                 .frames    = frames[index],
                 .tex       = textures[index],
+                .tex_uv    = tex_uv[index],
                 .velocity  = velocity[index],
                 .radius    = radius[index],
             };
@@ -113,12 +125,51 @@ namespace ecs
     }
     
     
+    Entity2Dref create(Entity2D &entity_out);
+    Entity2Dref create(Entity2D &entity_out, texture::Texture &tex, adobo::vec4f &tex_uv, f32 pos_x, f32 pos_y, f32 scale_x, f32 scale_y);
     Entity2Dref create_entity(Entity2D &entity_out);
-    Entity2D    create_entity(void);
     void        remove_entity(Entity2D &entity);
     void        update_all(f32 delta_time);
 
     adobo::vec4f get_aabb(Entity2D &ent);
+
+
+    template <i32 N>
+    struct Entity2DGroup
+    {
+        Entity2D data[N] = {};
+
+        void operator()(const texture::Texture &tex, const adobo::vec4f &tex_uv, f32 pos_x, f32 pos_y, f32 scale_x, f32 scale_y)
+        {
+            for (i32 i = 0; i < N; i++)
+            {
+                ecs::Entity2Dref e = ecs::create(data[i]);
+                e.tex = tex;
+                e.tex_uv = tex_uv;
+                e.position = {pos_x + i * scale_x, pos_y};
+                e.scale = {scale_x, scale_y};
+            }           
+        }
+
+        Entity2Dref operator()(void)
+        {
+            return data[0]();
+        }
+
+        void update()
+        {
+            const auto &first = data[0]();
+            f32 pos_x = first.position.x;
+            f32 pos_y= first.position.y;
+            f32 scale_x = first.scale.x;
+            f32 scale_y = first.scale.y;
+            for (int i = 1; i < N; i++)
+            {
+                data[i]().position = {pos_x + i * scale_x, pos_y};
+                data[i]().scale = {scale_x, scale_y};
+            }
+        }
+    };
     /*
     struct entity3D
     {

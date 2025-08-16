@@ -5,16 +5,16 @@ namespace core
 {
     struct Xform2D 
     {
-        adobo::vec2f position;
-        adobo::vec2f scale;
-        f32 rotation = 0;
+        adobo::vec2f position = {};
+        adobo::vec2f scale = {1,1};
+        adobo::vec3f rotation = {};
     };
 
     struct Xform2Dref
     {
         adobo::vec2f &position;
         adobo::vec2f &scale;
-        f32         &rotation;
+        adobo::vec3f &rotation;
 
         Xform2Dref& operator=(const Xform2Dref& other)
         {
@@ -43,7 +43,7 @@ namespace core
     {
         adobo::vec2f position[MAX_CAP] = {};
         adobo::vec2f scale[MAX_CAP]    = {};
-        f32 rotation[MAX_CAP]          = {};
+        adobo::vec3f rotation[MAX_CAP] = {};
 
         Xform2Dref operator[](size_t i)
         {

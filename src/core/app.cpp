@@ -10,12 +10,13 @@
 #include "res/graphics/shader.h"
 
 #include "util/debug.h"
+#include <thread>
 
 namespace core
 {
-    void main(const char *title, int width, int height)
+    void main(const char *title)
     {
-        plat::init(title, width, height);
+        plat::init(title);
         glClearColor(0.2f , 0.3f, 0.3f, 1.0f);
         
         clk::init();
@@ -25,8 +26,14 @@ namespace core
         
         while (!plat::should_close()) {
             plat::poll_events();
+
+            if (!plat::g_window.is_focused)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(250));
+            }
             
             clk::update();
+            plat::update();
             // input::update();
             game::update(clk::g_time.delta);
             

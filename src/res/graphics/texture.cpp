@@ -2,29 +2,11 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image/stb_image.h"
 #include <glad/gl.h>
+#include <cstdlib>
 
 #include "res/graphics/texture.h"
-
 #include "util/debug.h"
-
-static const char *s_atlas_slots[] = {
-    "u_atlas_info[0]",
-    "u_atlas_info[1]",
-    "u_atlas_info[2]",
-    "u_atlas_info[3]",
-    "u_atlas_info[4]",
-    "u_atlas_info[5]",
-    "u_atlas_info[6]",
-    "u_atlas_info[7]",
-    "u_atlas_info[8]",
-    "u_atlas_info[9]",
-    "u_atlas_info[10]",
-    "u_atlas_info[11]",
-    "u_atlas_info[12]",
-    "u_atlas_info[13]",
-    "u_atlas_info[14]",
-    "u_atlas_info[15]",
-};
+// #include "nlohmann/tinyxml2.h"
 
 static const char *s_texture_slots[] = {
     "u_textures[0]",
@@ -47,6 +29,66 @@ static const char *s_texture_slots[] = {
 
 namespace texture
 {
+    static adobo::vec4f *calculate_uvs(f32 x, f32 y, f32 tile_w, f32 tile_h, i32 &n_out)
+    {
+
+        f32 cols = x / tile_w; // how many tiles per row
+        f32 rows = y / tile_h; // how many tiles per column
+        if (cols < 1)
+            cols = 1;
+        if (rows < 1)
+            rows = 1;
+
+        i32 size = (i32)(cols * rows);
+        adobo::vec4f *arr = (adobo::vec4f *)std::malloc(size * sizeof(adobo::vec4f));
+        if (arr == nullptr)
+        {
+            DEBUG_ERR("Cant malloc this fat ass SubTextureDims.\n");
+            n_out = 0;
+            return nullptr;
+        }
+        n_out = (i32)(rows*cols);
+
+        f32 tile_u = tile_w / x; // fraction of texture per tile (width in UV space)
+        f32 tile_v = tile_h / y; // fraction of texture per tile (height in UV space)
+
+        for (i32 row = 0; row < (i32)rows; row++)
+        {
+            for (i32 col = 0; col < (i32)cols; col++)
+            {
+                i32 index = row * (i32)cols + col;
+
+                f32 uv_min_x = col * tile_u;
+                f32 uv_min_y = row * tile_v;
+                f32 uv_max_x = uv_min_x + tile_u;
+                f32 uv_max_y = uv_min_y + tile_v;
+
+                arr[index] = {uv_min_x, uv_min_y, uv_max_x, uv_max_y};
+            }
+        }
+        return arr;
+    }
+    static adobo::vec4f *calculate_uvs(ggb::SubTextureDims *dims, f32 x, f32 y, int sub_n)
+    {
+
+        adobo::vec4f *arr = (adobo::vec4f *)std::malloc(sub_n * sizeof(adobo::vec4f));
+        if (arr == nullptr)
+        {
+            DEBUG_ERR("Cant malloc this fat ass SubTextureDims.\n");
+            return nullptr;
+        }
+
+        for (int i = 0; i < sub_n; i++)
+        {
+            arr[i] = {
+                dims[i].x / x, 
+                dims[i].y / y,
+                (dims[i].x + dims[i].width) / x, 
+                (dims[i].y + dims[i].height)/ y
+            };
+        }
+        return arr;
+    }
 
     TextureSoa<MAX_TEXTURES> g_textures;
 
@@ -70,35 +112,64 @@ namespace texture
         tex.id = INVALID_TEX_ID;
     }
 
-    void set_onload_flipv(bool enabled)
+    Texture 
+    loadAtlas2D(ggb::AssetAtlas &atlas, const u32 format_gl)
     {
-        stbi_set_flip_vertically_on_load(enabled);
+        Texture tex = {INVALID_TEX_ID};
+        TexGL tex_gl = load2D(atlas.data, format_gl, atlas.x, atlas.y);
+
+        TextureRef data = create_tex2D(tex);
+        data.id = tex_gl;
+        data.tex_dim = {(float)atlas.x, (float)atlas.y};
+        data.sub_tex = calculate_uvs(atlas.sprite_dims, atlas.x, atlas.y, atlas.subtex_n);
+        data.sub_n = atlas.subtex_n;
+
+        return tex;
     }
 
-    Texture loadAtlas2D(ggb::AssetAtlas &atlas, const u32 format_gl)
+    Texture 
+    loadAtlas2D(ggb::AssetIMG &img, const u32 format_gl, f32 tile_w, f32 tile_h)
     {
-        // TODO: implement
+        Texture tex = {INVALID_TEX_ID};
+        TexGL tex_gl = load2D(img.data, format_gl, img.x, img.y);
+
+        i32 sub_n = 0;
+        TextureRef data = create_tex2D(tex);
+        data.id = tex_gl;
+        data.tex_dim = {(float)img.x, (float)img.y};
+        data.sub_tex = calculate_uvs(img.x, img.y, tile_w, tile_h, sub_n);
+        data.sub_n = sub_n;
+
+        return tex;
     }
 
-    Texture loadAtlas2D(ggb::AssetIMG &data, const u32 formal_gl, f32 tile_w, f32 tile_h)
+    Texture 
+    loadAtlas2D(const char *path, const u32 format_gl, f32 tile_w, f32 tile_h)
     {
-        Texture tex_id = load2D(data, formal_gl, tile_w, tile_h);
-        DEBUG_LOG("Atlas created %.1fx%.1f @ %.1fx%.1f\n", tile_w,tile_h, g_textures(tex_id).tex_dim.x, g_textures(tex_id).tex_dim.y);
-        return tex_id;
-    }
+        i32 channels, x, y;
 
-    Texture loadAtlas2D(const char *path, const u32 formal_gl, f32 tile_w, f32 tile_h)
-    {
-        Texture tex_id = load2D(path, formal_gl, tile_w, tile_h);
-        DEBUG_LOG("Atlas %s created %.1fx%.1f @ %.1fx%.1f\n", path, tile_w,tile_h, g_textures(tex_id).tex_dim.x, g_textures(tex_id).tex_dim.y);
-        return tex_id;
+        u8 *imageData = stbi_load(
+            path, &x, &y, &channels, 0
+        );
+
+        Texture tex = {INVALID_TEX_ID};
+        TexGL tex_gl = load2D(imageData, format_gl, x, y);
+
+        i32 sub_n = 0;
+        TextureRef data = create_tex2D(tex);
+        data.id = tex_gl;
+        data.tex_dim = {(float)x, (float)y};
+        data.sub_tex = calculate_uvs(x, y, tile_w, tile_h, sub_n);
+        data.sub_n = sub_n;
+
+        return tex;
     }
     
-
-    Texture load2D(u8 *imageData, const u32 format_gl, f32 tile_w, f32 tile_h, i32 x, i32 y, i32 channels)
+    TexGL 
+    load2D(u8 *imageData, const u32 format_gl, i32 x, i32 y)
     {
+        DEBUG_LOG("Loading Texture: %dx%d...\n", x, y);
         TexGL tex_gl;
-        Texture tex = {texture::INVALID_TEX_ID};
         
         glGenTextures(1, &tex_gl);
         glBindTexture(GL_TEXTURE_2D, tex_gl);
@@ -110,39 +181,23 @@ namespace texture
 
         if (imageData)
         {
-            DEBUG_LOG("Texture Loaded.\n");
+            // glGetError(); // clear
             glTexImage2D(
                 GL_TEXTURE_2D, 0, format_gl, 
                 x, y, 0, format_gl, 
                 GL_UNSIGNED_BYTE, imageData
             );
-            // glGenerateMipmap(GL_TEXTURE_2D);
-
-            TextureRef tex_info = create_tex2D(tex);
-            tex_info.id = tex_gl;
-            tex_info.tex_dim = 
-            {
-                (float)x, (float)y, tile_w, tile_h
-            };
+            // GLenum err = glGetError();
+            // DEBUG_LOG("GL error: %d\n", err);
+            DEBUG_LOG("Texture Loaded : %dx%d\n", x, y);
         }
 
         glBindTexture(GL_TEXTURE_2D, 0);
         
-        return tex;
+        return tex_gl;
     }
-
-    Texture load2D(ggb::AssetAtlas &atlas, const u32 format_gl, f32 tile_w, f32 tile_h)
-    {
-        Texture tex = load2D(atlas.data, format_gl, tile_w, tile_h, atlas.x, atlas.y, atlas.channels);
-        return tex;
-    }
-
-    Texture load2D(ggb::AssetIMG &data, const u32 format_gl, f32 tile_w, f32 tile_h)
-    {
-        return load2D(data.data, format_gl, tile_w, tile_h, data.x, data.y, data.channels);
-    }
-
-    Texture load2D(const char *path, const u32 format_gl, f32 tile_w, f32 tile_h)
+    
+    Texture load2D(const char *path, const u32 format_gl)
     {
         i32 channels, x, y;
 
@@ -150,16 +205,19 @@ namespace texture
             path, &x, &y, &channels, 0
         );
 
-        Texture tex = load2D(imageData, format_gl, tile_w, tile_h, x, y, channels);
+        Texture tex = {INVALID_TEX_ID};
+        TexGL tex_gl = load2D(imageData, format_gl, x, y);
+
+        i32 sub_n = 0;
+        TextureRef data = create_tex2D(tex);
+        data.id = tex_gl;
+        data.tex_dim = {(float)x, (float)y};
+        data.sub_tex = calculate_uvs(x, y, x, y, sub_n);
+        data.sub_n = sub_n;
         
         stbi_image_free(imageData);
 
         return tex;
-    }
-    
-    Texture load2D(const char *path, const u32 format_gl)
-    {
-        return load2D(path, format_gl, 0, 0);
     }
 
     void bind2D(Texture &tex, const u32 slot)
@@ -173,26 +231,27 @@ namespace texture
         glBindTexture(GL_TEXTURE_2D, texgl);
     }
     
-    void bindAtlas2D(u32 shader_id, Texture &tex, u32 slot)
+    void bindAtlas2D(Texture &tex, u32 shader_id, u32 slot)
     {
         bind2D(tex, slot);
         shader::set_uniform_i32(
             shader_id, s_texture_slots[slot], 
             (i32) slot
         );
-        shader::set_uniform_vec4(
-            shader_id, s_atlas_slots[slot], 
-            (float *) &g_textures(tex).tex_dim 
-        );
     }
 
-    void bindAtlas2D(shader::Shader shader, Texture &tex, u32 slot)
+    void bindAtlas2D(Texture &tex, shader::Shader shader, u32 slot)
     {
-        bindAtlas2D(shader.id, tex, slot);
+        bindAtlas2D(tex, shader.id, slot);
     }
 
     void free_tex2D(TexGL *texgl)
     {
         glDeleteTextures(1, texgl);
+    }
+
+    void set_onload_flipv(bool enabled)
+    {
+        stbi_set_flip_vertically_on_load(enabled);
     }
 }

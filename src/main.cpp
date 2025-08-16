@@ -20,5 +20,5 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 int main(int argc, char *argv[])
 {
     (void) argc, (void) argv;
-    core::main("Matris", 1200, 800);
+    core::main("Adobo");
 }
