@@ -1,5 +1,12 @@
 #pragma once
 
+namespace SHADER {
+enum {
+V_SPRITE,
+F_SPRITE,
+};
+}
+
 namespace ATLAS {
 enum {
 SHOOT,

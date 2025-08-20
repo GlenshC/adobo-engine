@@ -11,7 +11,30 @@
 
 namespace renderer
 {
+    /* TYPES */
     typedef u16 TexGL16;
+    struct RDataSprite;
+    struct SpriteRef;
+    template<i32 MAX_S>
+    struct SpritesSoa;
+
+    /* GLOBALS */
+    extern SpritesSoa<MAX_SPRITES> g_sprites;
+
+    /* FUNCTIONS */
+    template<i32 N>
+    inline void submit_sprites(ecs::Entity2DGroup<N> &ent);
+
+    void begin_sprites(shader::Shader shader);
+    void submit_sprites(ecs::Entity2D &ent);
+    void end_sprites(void);
+    
+    void init_sprites(void);
+    void flush_sprites(void);
+    void render_sprites(void);
+    void clear_sprites(void);
+
+    /* TYPE DEFS */
     struct RDataSprite
     {
         mat4            model     = GLM_MAT4_IDENTITY_INIT;
@@ -64,21 +87,11 @@ namespace renderer
         }
     };
 
-    extern SpritesSoa<MAX_SPRITES> g_sprites;
-
-    void begin_sprites(shader::Shader shader);
-    void submit_sprites(ecs::Entity2D &ent);
+    /* FUNCTION DEFS */
     template<i32 N>
-    void submit_sprites(ecs::Entity2DGroup<N> &ent)
+    inline void submit_sprites(ecs::Entity2DGroup<N> &ent)
     {
         for (int i=0; i < N; i++)
             submit_sprites(ent.data[i]);
     }
-
-    void end_sprites(void);
-    
-    void init_sprites(void);
-    void flush_sprites(void);
-    void render_sprites(void);
-    void clear_sprites(void);
 }

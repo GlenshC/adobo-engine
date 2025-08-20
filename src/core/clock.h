@@ -5,7 +5,25 @@
 
 
 namespace clk {
+    /* CONSTANTS */
     const i32 MAX_FRAME_TIMERS = 8;
+
+    /* TYPES */
+    struct TimeState;
+    struct FPSState;
+
+    /* GLOBALS */
+    extern TimeState g_time;
+    extern FPSState g_fps;
+
+    /* FUNCTIONS */
+    void    init(void);
+    void    update(void);
+    inline f64 get_dtime(void);
+    inline f64 get_time(void);  
+    inline i32 get_fps(void);   
+
+    /* TYPE DEFS */
     struct TimeState
     {
         f64     last  = 0;    
@@ -24,28 +42,8 @@ namespace clk {
         i32     count;
     };
 
-    extern TimeState g_time;
-    extern FPSState g_fps;
-
-    void    init(void);
-    void    update(void);
-    // void    tick(void);
-
-    inline f64
-    get_dtime(void) 
-    {
-        return g_time.delta;
-    }
-    
-    inline f64
-    get_time(void) 
-    {
-        return g_time.now;
-    }
-    
-    inline i32
-    get_fps(void)
-    {
-        return g_fps.fps;
-    }
+    /* FUNC DEFS */
+    inline f64 get_dtime(void) { return g_time.delta; }
+    inline f64 get_time(void)  { return g_time.now; }
+    inline i32 get_fps(void)   { return g_fps.fps; }
 }

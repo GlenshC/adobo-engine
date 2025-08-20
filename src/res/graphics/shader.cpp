@@ -2,6 +2,7 @@
 #include <glad/gl.h>
 
 #include "res/graphics/shader.h"
+#include "binassets/binasset_read.h"
 #include "util/string.h"
 #include "util/debug.h"
 
@@ -10,8 +11,9 @@ namespace shader
 {
     static u32  _shader_link(u32 vert_id, u32 frag_id);
     static u32  _shader_compile(const char *source, u32 type);
+    static void create_fsource(Shader &shader, const char *vertSource, const char *fragSource);
 
-    void create_fsource(Shader &shader, const char *vertSource, const char* fragSource)
+    static void create_fsource(Shader &shader, const char *vertSource, const char* fragSource)
     {
         u32 vert_id = _shader_compile(vertSource, GL_VERTEX_SHADER);
         u32 frag_id = _shader_compile(fragSource, GL_FRAGMENT_SHADER);
@@ -26,9 +28,11 @@ namespace shader
         shader.fragPath = NULL;
     }
 
-    void create(Shader &shader, const ggb::AssetShader &vert, ggb::AssetShader &frag)
+    void create(Shader &shader, const binassets::AssetShader &vert, binassets::AssetShader &frag)
     {
         create_fsource(shader, vert.data, frag.data);
+        shader.vertPath = nullptr;
+        shader.fragPath = nullptr;
     }
 
     void create(Shader &shader, const char *vertPath, const char *fragPath)
@@ -109,6 +113,20 @@ namespace shader
     void set_uniform_vec4(const u32 shader_id, const char *name, vec4 value)
     {
         glUniform4fv(
+            glGetUniformLocation(shader_id, name), 
+            1, (float *) value
+        );
+    }
+    void set_uniform_vec3(const Shader &shader, const char *name, vec3 value)
+    {
+        glUniform3fv(
+            glGetUniformLocation(shader.id, name), 
+            1, (float *) value
+        );
+    }
+    void set_uniform_vec3(const u32 shader_id, const char *name, vec3 value)
+    {
+        glUniform3fv(
             glGetUniformLocation(shader_id, name), 
             1, (float *) value
         );

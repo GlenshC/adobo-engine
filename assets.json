@@ -7,5 +7,7 @@
     { "path": "./assets/atlas/shoot_stall.xml", "key": "SHOOT_STALL"}
   ],
   "shaders": [
+    {"path": "./assets/shader/sprite.vert", "key": "V_SPRITE"},
+    { "path":"./assets/shader/sprite.frag", "key": "F_SPRITE"}
   ]
 }

@@ -5,6 +5,7 @@
 #include <cstdlib>
 
 #include "res/graphics/texture.h"
+#include "binassets/binasset_read.h"
 #include "util/debug.h"
 // #include "nlohmann/tinyxml2.h"
 
@@ -68,7 +69,7 @@ namespace texture
         }
         return arr;
     }
-    static adobo::vec4f *calculate_uvs(ggb::SubTextureDims *dims, f32 x, f32 y, int sub_n)
+    static adobo::vec4f *calculate_uvs(binassets::SubTextureDims *dims, f32 x, f32 y, int sub_n)
     {
 
         adobo::vec4f *arr = (adobo::vec4f *)std::malloc(sub_n * sizeof(adobo::vec4f));
@@ -113,7 +114,7 @@ namespace texture
     }
 
     Texture 
-    loadAtlas2D(ggb::AssetAtlas &atlas, const u32 format_gl)
+    loadAtlas2D(binassets::AssetAtlas &atlas, const u32 format_gl)
     {
         Texture tex = {INVALID_TEX_ID};
         TexGL tex_gl = load2D(atlas.data, format_gl, atlas.x, atlas.y);
@@ -121,14 +122,20 @@ namespace texture
         TextureRef data = create_tex2D(tex);
         data.id = tex_gl;
         data.tex_dim = {(float)atlas.x, (float)atlas.y};
-        data.sub_tex = calculate_uvs(atlas.sprite_dims, atlas.x, atlas.y, atlas.subtex_n);
+        data.sub_tex = calculate_uvs(atlas.dims, atlas.x, atlas.y, atlas.subtex_n);
         data.sub_n = atlas.subtex_n;
-
+        atlas.tex = tex;
+        if (binassets::g_asset_free_on_load)
+        {
+            DEBUG_LOG("loadAtlas2D: Free on load.\n");
+            std::free(atlas.data);
+        }
+        
         return tex;
     }
 
     Texture 
-    loadAtlas2D(ggb::AssetIMG &img, const u32 format_gl, f32 tile_w, f32 tile_h)
+    loadAtlas2D(binassets::AssetIMG &img, const u32 format_gl, f32 tile_w, f32 tile_h)
     {
         Texture tex = {INVALID_TEX_ID};
         TexGL tex_gl = load2D(img.data, format_gl, img.x, img.y);
@@ -187,6 +194,7 @@ namespace texture
                 x, y, 0, format_gl, 
                 GL_UNSIGNED_BYTE, imageData
             );
+            glGenerateMipmap(GL_TEXTURE_2D);
             // GLenum err = glGetError();
             // DEBUG_LOG("GL error: %d\n", err);
             DEBUG_LOG("Texture Loaded : %dx%d\n", x, y);

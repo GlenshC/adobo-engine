@@ -25,8 +25,7 @@ namespace core
         gui::init();
         
         while (!plat::should_close()) {
-            plat::poll_events();
-
+            
             if (!plat::g_window.is_focused)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(250));
@@ -38,12 +37,14 @@ namespace core
             game::update(clk::g_time.delta);
             
             //test
-            
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
+            
             game::render();
             gui::render();
-            
+           
+            glFinish();
             plat::swap_buffers();
+            plat::poll_events();
         }
         game::shutdown();
         gui::shutdown();
