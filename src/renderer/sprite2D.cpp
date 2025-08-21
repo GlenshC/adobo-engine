@@ -81,7 +81,9 @@ namespace renderer
         
         g_sprites[data_index].tex_uv     = entity.tex_uv;
         g_sprites[data_index].tex_index  = tex_index;
-        g_sprites[data_index].transform  = entity.transform;
+        g_sprites[data_index].transform.position = entity.position;
+        g_sprites[data_index].transform  = entity.position;
+        g_sprites[data_index].transform  = entity.position;
         g_sprites.sprite_count++;
     }
 

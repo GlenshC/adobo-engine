@@ -109,6 +109,7 @@ add_executable(${PROJECT_NAME}
     src/util/debug_state.cpp
 
     vendor/binassets/src/binasset_read.cpp
+    vendor/binassets/src/binasset_json.cpp
 )
     
     

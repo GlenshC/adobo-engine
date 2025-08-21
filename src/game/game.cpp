@@ -23,7 +23,7 @@
 #include "ggb/data_struct.h"
 
 #include "imgui.h"
-#include <algorithm>
+#include "game/editor.h"
 
 #define MAX_BULLET_DECAL 10
 struct GameState
@@ -45,8 +45,6 @@ static void mbtn_callback(int button, int action, int mods);
 static void key_input(GLFWwindow* window, int key, int scancode, int action, int mods);
 namespace game {
     // run once
-    void editor_gui();
-
     void init(void) 
     {
         // INITS
@@ -115,21 +113,12 @@ namespace game {
             ImGui::Text("Game  FPS: %d", fps_game);
             ImGui::Text("Mouse: %.2lf, %.2lf", plat::g_window.mpos.x, plat::g_window.mpos.y);
             ImGui::Text("Win: %d %d", plat::g_window.width, plat::g_window.height);
-            ImGui::Text("ECS s,c: %d %d", ecs::g_entities.size(), ecs::g_entities.capacity);
+            ImGui::Text("ECS s,c: %zu %zu", ecs::g_entities.size, ecs::g_entities.capacity);
         }
         ImGui::End();
 
-        editor_gui();
-    
+        editor::editor_gui();
     }
-
-    void editor_gui()
-    {
-        ImGui::Begin("Editor");
-
-        ImGui::End();
-    }
-
 
 }
 void win_resize(int width, int height)

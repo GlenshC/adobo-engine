@@ -7,9 +7,6 @@
 #define MAX_TEXTURES 12 
 namespace texture
 {
-    /* CONST */
-    const i32 INVALID_TEX_ID = -1;
-    
 
     /* TYPES */
     typedef i32 TextureID;
@@ -17,12 +14,11 @@ namespace texture
     
     struct TextureRef;
     struct Texture;
-    template<i32 MAX_T>
-    struct TextureSoa;
+    struct TextureManager;
 
     
     /* GLOBALS */
-    extern TextureSoa<MAX_TEXTURES> g_textures;
+    extern TextureManager g_textures;
 
 
     /* FUNCTIONS */
@@ -70,19 +66,98 @@ namespace texture
         TextureRef &operator=(const TextureRef &other);
     };
 
-    template<i32 MAX_T>
-    struct TextureSoa {
-        ggb::Sparse<MAX_T>   sparse;
-        TexGL                tex_ids[MAX_T]       = {};
-        adobo::vec2f         tex_dim[MAX_T]       = {}; // dimensions x, y
-        const adobo::vec4f  *sub_tex[MAX_T]       = {}; // contains tex_uv for tex and guaranteed to atleast 1 
-        i32                  sub_n[MAX_T]         = {};
-        i32                  max_capacity         = MAX_T;
+    struct TextureManager {
+        char                *_bp;
+        TexGL               *tex_ids;
+        adobo::vec2f        *tex_dim;
+        const adobo::vec4f **sub_tex; // contains tex_uv for tex and guaranteed to atleast 1 
+        i32                 *sub_n;
+        ggb::Sparse<i32>     sparse;
+        
+        size_t     size;
+        size_t     capacity;
 
-        TextureRef operator[](i32 index);
+        void       init(size_t n);
+        int        reserve(size_t new_cap);
+        TextureRef operator[](size_t index);
         TextureRef operator()(TextureID tex_id);
         TextureRef operator()(Texture &tex);
     };
+
+    inline void TextureManager::init(size_t n)
+    {
+        if (n > 0 && _bp)
+        {
+            char *mem = nullptr;
+            mem = (char *)std::malloc(
+                sizeof(*tex_ids) * n +
+                sizeof(*tex_dim) * n +
+                sizeof(*sub_tex) * n +
+                sizeof(*sub_n)   * n
+            );
+            if (!mem)
+            {
+                DEBUG_ERR("Sparse: BAD ALLOCATION\n");
+                return;
+            }
+            size_t offset = 0;
+            _bp = mem;
+
+            tex_ids = (TexGL *)               (mem);
+            tex_dim = (adobo::vec2f  *)       (mem + (offset += sizeof(*tex_ids) * n));
+            sub_tex = (const adobo::vec4f **) (mem + (offset += sizeof(*tex_dim) * n));
+            sub_n =   (i32 *)                 (mem + (offset += sizeof(*sub_tex) * n));
+
+            sparse.init(n);
+            capacity = n;
+        }
+    }
+
+    inline int TextureManager::reserve(size_t new_cap)
+    {
+        if (new_cap <= capacity)
+            return 1;
+
+        char *mem = (char *)std::realloc(
+            _bp,
+            sizeof(*tex_ids) * new_cap +
+            sizeof(*tex_dim) * new_cap +
+            sizeof(*sub_tex) * new_cap +
+            sizeof(*sub_n)   * new_cap
+        );
+        if (!mem)
+        {
+            DEBUG_ERR("TextureManager: Resize Error\n");
+            return 1;
+        }
+        size_t boffset = 
+            sizeof(*tex_ids) * capacity +
+            sizeof(*tex_dim) * capacity +
+            sizeof(*sub_tex) * capacity;
+
+        size_t offset = 0;
+        _bp = mem;
+        tex_ids = (TexGL *)               (mem); 
+        tex_dim = (adobo::vec2f *)        (mem + (offset += sizeof(*tex_ids) * new_cap));
+        sub_tex = (const adobo::vec4f **) (mem + (offset += sizeof(*tex_dim) * new_cap));
+        sub_n   = (i32 *)                 (mem + (offset += sizeof(*sub_tex) * new_cap));
+
+        if (new_cap >= (capacity << 1)) // memcpy
+        {
+            memcpy(sub_n  , (_bp), sizeof(*sub_n) * capacity);
+            memcpy(sub_tex, (_bp + (boffset -= sizeof(*sub_tex) * capacity)), sizeof(*sub_tex) * capacity);
+            memcpy(tex_dim, (_bp + (boffset -= sizeof(*tex_dim) * capacity)), sizeof(*tex_dim) * capacity);
+        }
+        else
+        {
+            memmove(sub_n  , (_bp), sizeof(*sub_n) * capacity);
+            memmove(sub_tex, (_bp + (boffset -= sizeof(*sub_tex) * capacity)), sizeof(*sub_tex) * capacity);
+            memmove(tex_dim, (_bp + (boffset -= sizeof(*tex_dim) * capacity)), sizeof(*tex_dim) * capacity);
+        }
+        capacity = new_cap;
+        return 0; 
+    }
+
 
 
     /* FUNC DEF */
@@ -127,9 +202,8 @@ namespace texture
 
 
     /* TextureSoa */
-    template <i32 MAX_T>
     inline TextureRef 
-    TextureSoa<MAX_T>::operator[](i32 index)
+    TextureManager::operator[](size_t index)
     {
         return TextureRef{
             .id = tex_ids[index],
@@ -139,16 +213,14 @@ namespace texture
         };
     }
 
-    template <i32 MAX_T>
     inline TextureRef 
-    TextureSoa<MAX_T>::operator()(TextureID tex_id)
+    TextureManager::operator()(TextureID tex_id)
     {
         return (*this)[sparse[tex_id]];
     }
 
-    template <i32 MAX_T>
     inline TextureRef 
-    TextureSoa<MAX_T>::operator()(Texture &tex)
+    TextureManager::operator()(Texture &tex)
     {
         return (*this)(tex.id);
     }

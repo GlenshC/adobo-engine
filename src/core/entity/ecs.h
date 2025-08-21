@@ -3,8 +3,9 @@
 #include "types.h"
 #include "components/transform.h"
 #include "renderer/texture.h"
+#include <vector>
 
-#define MAX_ENTITIES 200
+#define MIN_ENTITIES 256
 namespace ecs 
 {
     /* CONSTANTS */
@@ -14,15 +15,19 @@ namespace ecs
     typedef i32 Entity2DID;
     struct Entity2Dref;
     struct Entity2D;
-    template<i32 MAX_E>
-    struct Entity2DSoa;
+    struct Entity2DManager;
     template <i32 N>
     struct Entity2DGroup;
     
     /* GLOBALS */
-    extern Entity2DSoa<MAX_ENTITIES> g_entities;
+    extern Entity2DManager g_entities;
 
     /* FUNCTIONS */
+    void        init();
+    Entity2Dref create(Entity2D &entity_out);
+    Entity2Dref create_entity(Entity2D &entity_out);
+    void        remove_entity(Entity2D &entity);
+
     Entity2Dref create(
         Entity2D &entity_out, 
         const texture::Texture &tex, 
@@ -37,7 +42,6 @@ namespace ecs
         const texture::Texture &tex, 
         const adobo::vec4f &tex_uv
     );
-
     template<i32 N>
     Entity2Dref create(
         Entity2DGroup<N> &ents, 
@@ -48,25 +52,17 @@ namespace ecs
         const f32 scale_x, 
         const f32 scale_y
     );
-    Entity2Dref create(Entity2D &entity_out);
-    Entity2Dref create_entity(Entity2D &entity_out);
-    void        remove_entity(Entity2D &entity);
-    void        update_all(f32 delta_time);
 
     adobo::vec4f get_aabb(Entity2D &ent);
 
 
     /* TYPE DEFS */
     struct Entity2Dref {
-        core::Xform2Dref  transform;
         adobo::vec2f      &position;
         adobo::vec2f      &scale;
         adobo::vec3f      &rotation;
-        adobo::vec4<i16>  &frames;
         texture::Texture  &tex;
         adobo::vec4f      &tex_uv;
-        adobo::vec2f      &velocity;
-        f32               &radius;
 
         Entity2Dref& operator=(const Entity2Dref& other);
     };
@@ -78,24 +74,27 @@ namespace ecs
         inline Entity2Dref operator()(void);
     };
 
-    template<i32 MAX_E>
-    struct Entity2DSoa 
+    struct Entity2DManager 
     {
-        core::Xform2Dsoa<MAX_E> transform         = {};
-        texture::Texture        textures[MAX_E]   = {}; // our own id not gl
-        adobo::vec4f            tex_uv[MAX_E]     = {}; // x, y, width, height (calculated before being sent to gpu)
-        adobo::vec4<i16>        frames[MAX_E]     = {}; // curr, base, offset, frame_rate
-        adobo::vec2f            velocity[MAX_E]   = {};
-        f32                     radius[MAX_E]     = {};
+        char             *_bp;
+        adobo::vec2f     *position;
+        adobo::vec2f     *scale;
+        adobo::vec3f     *rotation;
+        texture::Texture *textures;
+        adobo::vec4f     *tex_uv;
+        ggb::Sparse<i32>  sparse;
         
-        ggb::Sparse<MAX_E> sparse; // entity ids
-        const i32   capacity = MAX_E;
+        size_t size;
+        size_t capacity;
 
+        /* methods */
+        inline void init(size_t n);
+        inline int  reserve(size_t new_cap);
+        
         /* operators */
-        Entity2Dref operator[](i32 index);
-        Entity2Dref operator()(Entity2DID id);
+        inline Entity2Dref operator[](size_t index);
+        inline Entity2Dref operator()(Entity2DID id);
         inline Entity2Dref operator()(Entity2D &entity);
-        i32& size(void);
     };
 
 
@@ -120,53 +119,115 @@ namespace ecs
     /* Entity2Dref */
     inline Entity2Dref &Entity2Dref::operator=(const Entity2Dref &other)
     {
-        transform = other.transform;
         position = other.position;
-        scale = other.scale;
+        scale    = other.scale;
         rotation = other.rotation;
-        frames = other.frames;
-        tex = other.tex;
-        tex_uv = other.tex_uv;
-        velocity = other.velocity;
-        radius = other.radius;
+        tex      = other.tex;
+        tex_uv   = other.tex_uv;
 
         return *this;
     }
     
 
-    /* Entity2DSoa */
-    template<i32 MAX_E>
-    inline Entity2Dref Entity2DSoa<MAX_E>::operator[](i32 index)
+    /* Entity2DManager */
+    inline void Entity2DManager::init(size_t n)
+    {
+        if (n > 0 && _bp)
+        {
+            char *mem = nullptr;
+            mem = (char *)std::malloc(
+                sizeof(*position) * n +
+                sizeof(*scale)    * n + 
+                sizeof(*rotation) * n + 
+                sizeof(*textures) * n + 
+                sizeof(*tex_uv)   * n
+            );
+            if (!mem)
+            {
+                DEBUG_ERR("Sparse: BAD ALLOCATION\n");
+                return;
+            }
+            size_t offset = 0;
+            _bp      = mem;
+            position = (adobo::vec2f *)     (mem);
+            scale    = (adobo::vec2f *)     (mem + (offset += n * sizeof(*position)));
+            rotation = (adobo::vec3f *)     (mem + (offset += n * sizeof(*scale)));
+            textures = (texture::Texture *) (mem + (offset += n * sizeof(*rotation)));
+            tex_uv   = (adobo::vec4f *)     (mem + (offset += n * sizeof(*textures)));
+            sparse.init(n);
+            capacity = n;
+        }
+    }
+
+    inline int Entity2DManager::reserve(size_t new_cap)
+    {
+        if (new_cap <= capacity)
+            return 1;
+
+        char *mem = (char *)std::realloc(
+            _bp,
+            sizeof(*position) * new_cap +
+            sizeof(*scale)    * new_cap +
+            sizeof(*rotation) * new_cap +
+            sizeof(*textures) * new_cap +
+            sizeof(*tex_uv)   * new_cap
+        );
+        if (!mem)
+        {
+            DEBUG_ERR("Entity2DManager: Resize Error\n");
+            return 1;
+        }
+        size_t boffset = 
+            sizeof(*position) * capacity +
+            sizeof(*scale)    * capacity +
+            sizeof(*rotation) * capacity +
+            sizeof(*textures) * capacity;
+
+        size_t offset = 0;
+        _bp = mem;
+        position    = (adobo::vec2f *)     (mem); 
+        scale       = (adobo::vec2f *)     (mem + (offset += sizeof(*position) * new_cap));
+        rotation    = (adobo::vec3f *)     (mem + (offset += sizeof(*scale)    * new_cap));
+        textures    = (texture::Texture *) (mem + (offset += sizeof(*rotation) * new_cap));
+        tex_uv      = (adobo::vec4f *)     (mem + (offset += sizeof(*textures) * new_cap));
+
+        if (new_cap >= (capacity << 1)) // memcpy
+        {
+            memcpy(tex_uv  , (_bp + (boffset)), sizeof(*tex_uv)   * capacity);
+            memcpy(textures, (_bp + (boffset -= sizeof(*textures) * capacity)), sizeof(*textures) * capacity);
+            memcpy(rotation, (_bp + (boffset -= sizeof(*rotation) * capacity)), sizeof(*rotation) * capacity);
+            memcpy(scale   , (_bp + (boffset -= sizeof(*scale)    * capacity)), sizeof(*scale)    * capacity);
+        }
+        else
+        {
+            memmove(tex_uv  , (_bp + (boffset)), sizeof(*tex_uv)   * capacity);
+            memmove(textures, (_bp + (boffset -= sizeof(*textures) * capacity)), sizeof(*textures) * capacity);
+            memmove(rotation, (_bp + (boffset -= sizeof(*rotation) * capacity)), sizeof(*rotation) * capacity);
+            memmove(scale   , (_bp + (boffset -= sizeof(*scale)    * capacity)), sizeof(*scale)    * capacity);
+        }
+        capacity = new_cap;
+        return 0; 
+    }
+
+    inline Entity2Dref Entity2DManager::operator[](size_t index)
     {
         return Entity2Dref{
-            .transform = transform[index],
-            .position = transform[index].position,
-            .scale = transform[index].scale,
-            .rotation = transform[index].rotation,
-            .frames = frames[index],
-            .tex = textures[index],
-            .tex_uv = tex_uv[index],
-            .velocity = velocity[index],
-            .radius = radius[index],
+            .position = position[index],
+            .scale    = scale[index],
+            .rotation = rotation[index],
+            .tex      = textures[index],
+            .tex_uv   = tex_uv[index]
         };
     }
 
-    template<i32 MAX_E>
-    inline Entity2Dref Entity2DSoa<MAX_E>::operator()(Entity2DID id)
+    inline Entity2Dref Entity2DManager::operator()(Entity2DID id)
     {
         return (*this)[sparse[id]];
     }
 
-    template<i32 MAX_E>
-    inline Entity2Dref Entity2DSoa<MAX_E>::operator()(Entity2D &entity)
+    inline Entity2Dref Entity2DManager::operator()(Entity2D &entity)
     {
         return (*this)[sparse[entity.id]];
-    }
-
-    template<i32 MAX_E>
-    inline i32 &Entity2DSoa<MAX_E>::size(void)
-    {
-        return sparse.size;
     }
 
 

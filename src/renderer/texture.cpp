@@ -30,6 +30,8 @@ static const char *s_texture_slots[] = {
 
 namespace texture
 {
+    TextureManager g_textures;
+
     static adobo::vec4f *calculate_uvs(f32 x, f32 y, f32 tile_w, f32 tile_h, i32 &n_out)
     {
 
@@ -91,7 +93,6 @@ namespace texture
         return arr;
     }
 
-    TextureSoa<MAX_TEXTURES> g_textures;
 
     Texture create_tex2D(void)
     {
@@ -110,13 +111,13 @@ namespace texture
         i32 last_index    = g_textures.sparse.size;
         free_tex2D(&g_textures[index].id);
         g_textures[index] = g_textures[last_index];
-        tex.id = INVALID_TEX_ID;
+        tex.id = g_textures.sparse.invalid_id();
     }
 
     Texture 
     loadAtlas2D(binassets::AssetAtlas &atlas, const u32 format_gl)
     {
-        Texture tex = {INVALID_TEX_ID};
+        Texture tex = {g_textures.sparse.invalid_id()};
         TexGL tex_gl = load2D(atlas.data, format_gl, atlas.x, atlas.y);
 
         TextureRef data = create_tex2D(tex);
@@ -137,7 +138,7 @@ namespace texture
     Texture 
     loadAtlas2D(binassets::AssetIMG &img, const u32 format_gl, f32 tile_w, f32 tile_h)
     {
-        Texture tex = {INVALID_TEX_ID};
+        Texture tex = {g_textures.sparse.invalid_id()};
         TexGL tex_gl = load2D(img.data, format_gl, img.x, img.y);
 
         i32 sub_n = 0;
@@ -159,7 +160,7 @@ namespace texture
             path, &x, &y, &channels, 0
         );
 
-        Texture tex = {INVALID_TEX_ID};
+        Texture tex = {g_textures.sparse.invalid_id()};
         TexGL tex_gl = load2D(imageData, format_gl, x, y);
 
         i32 sub_n = 0;
@@ -213,7 +214,7 @@ namespace texture
             path, &x, &y, &channels, 0
         );
 
-        Texture tex = {INVALID_TEX_ID};
+        Texture tex = {g_textures.sparse.invalid_id()};
         TexGL tex_gl = load2D(imageData, format_gl, x, y);
 
         i32 sub_n = 0;

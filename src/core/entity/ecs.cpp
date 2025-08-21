@@ -2,7 +2,12 @@
 #include "core/clock.h"
 namespace ecs 
 {
-    Entity2DSoa<MAX_ENTITIES> g_entities;
+    Entity2DManager g_entities;
+
+    void init()
+    {
+        g_entities.init(MIN_ENTITIES);
+    }
 
 
     Entity2Dref create(Entity2D &entity_out)
@@ -56,23 +61,7 @@ namespace ecs
 
         entity.id = INVALID_ENTITY_ID;
     }
-    void update_all(f32 delta_time)
-    {
-        for (i32 i = 0; i < g_entities.size(); i++)
-        {
-            g_entities[i].position.x += g_entities[i].velocity.x * delta_time;
-            g_entities[i].position.y += g_entities[i].velocity.y * delta_time;
 
-            if (clk::g_time.frame_timer[g_entities[i].frames[3]] == 0)
-            {
-                g_entities[i].frames[0]++;
-                if ( g_entities[i].frames[0] > (g_entities[i].frames[1] + g_entities[i].frames[2]))
-                {
-                    g_entities[i].frames[0] = g_entities[i].frames[1];
-                }
-            }
-        }
-    }
     adobo::vec4f get_aabb(Entity2D &ent)
     {
         ecs::Entity2Dref data = ent();

@@ -16,3 +16,9 @@ implement editor gui, json loader for loading assets and scene creator
 might think of a runtime game loader instead of a raw code to help game dev to be faster
 loads data like entities, type of entities, position, scale
 and code is just the behavior of such entities
+
+!!!!!!!
+IMPORTANT!!!!
+IMPLEMENT ALL OF THE SHIT AS DYNAMICALLY ALLOCATED SHIT
+SPRITE2DSOA
+TextureSoa now TextureManager
