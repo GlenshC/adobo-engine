@@ -4,7 +4,7 @@
 #include <glad/gl.h>
 #include <cstdlib>
 
-#include "res/graphics/texture.h"
+#include "renderer/texture.h"
 #include "binassets/binasset_read.h"
 #include "util/debug.h"
 // #include "nlohmann/tinyxml2.h"

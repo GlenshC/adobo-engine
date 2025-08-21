@@ -101,8 +101,8 @@ add_executable(${PROJECT_NAME}
     src/renderer/sprite2D.cpp
     src/renderer/renderer.cpp
 
-    src/res/graphics/texture.cpp
-    src/res/graphics/shader.cpp
+    src/renderer/texture.cpp
+    src/renderer/shader.cpp
     
     src/util/mem_arena.cpp
     src/util/string.cpp

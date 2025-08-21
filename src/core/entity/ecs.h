@@ -2,7 +2,7 @@
 
 #include "types.h"
 #include "components/transform.h"
-#include "res/graphics/texture.h"
+#include "renderer/texture.h"
 
 #define MAX_ENTITIES 200
 namespace ecs 

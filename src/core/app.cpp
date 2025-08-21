@@ -7,7 +7,7 @@
 #include "core/gui.h"
 
 #include "renderer/renderer.h"
-#include "res/graphics/shader.h"
+#include "renderer/shader.h"
 
 #include "util/debug.h"
 #include <thread>

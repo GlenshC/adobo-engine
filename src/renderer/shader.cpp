@@ -1,7 +1,7 @@
 #include <cstdio>
 #include <glad/gl.h>
 
-#include "res/graphics/shader.h"
+#include "renderer/shader.h"
 #include "binassets/binasset_read.h"
 #include "util/string.h"
 #include "util/debug.h"

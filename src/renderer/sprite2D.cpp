@@ -1,7 +1,7 @@
 #include <glad/gl.h>
 #include "renderer/sprite2D.h"
 #include "core/entity/ecs.h"
-#include "res/graphics/shader.h"
+#include "renderer/shader.h"
 
 namespace renderer
 {

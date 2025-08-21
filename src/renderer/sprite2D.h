@@ -4,7 +4,7 @@
 #include "types.h"
 #include "renderer/renderer.h"
 #include "components/transform.h"
-#include "res/graphics/texture.h"
+#include "renderer/texture.h"
 #include "core/entity/ecs.h"
 
 #define MAX_SPRITES 200

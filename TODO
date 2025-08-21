@@ -10,3 +10,9 @@ todo utilize compute shaders to our advantage
 TODO add tooling that aids making scenes or like placing out the objects
 
 todo make default coord system from 0 - SCREEN_WIDTH/HEIGHT to 0.0f - 1.0f
+
+make a mem system
+implement editor gui, json loader for loading assets and scene creator
+might think of a runtime game loader instead of a raw code to help game dev to be faster
+loads data like entities, type of entities, position, scale
+and code is just the behavior of such entities

@@ -25,7 +25,7 @@ namespace gui
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         io = &ImGui::GetIO();
-        // io->IniFilename = nullptr; // enable to disable imgui.ini
+        io->IniFilename = nullptr; // enable to disable imgui.ini
         io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         io->FontGlobalScale = 1.7f;
         // io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;

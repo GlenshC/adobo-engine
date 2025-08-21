@@ -1,7 +1,7 @@
 #pragma once
 #include "types.h"
 #include "ggb/sparse.h"
-#include "res/graphics/shader.h"
+#include "renderer/shader.h"
 #include "binassets/binasset_read_decl.h"
 
 #define MAX_TEXTURES 12 
