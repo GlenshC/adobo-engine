@@ -59,6 +59,9 @@ namespace ggb
             id_to_index = (T *)(_bp);
             index_to_id = (T *)(_bp + (offset += size_m));
             free_id     = (T *)(_bp + (offset += size_m));
+            
+            size = 0;
+            capacity = n;
             return;
         }
         DEBUG_ERR("failed to init Sparse\n");
@@ -67,8 +70,7 @@ namespace ggb
     template <typename T>
     inline int Sparse<T>::reserve(size_t new_cap)
     {
-        if (new_cap <= capacity)
-            return 1;
+        if (new_cap <= capacity) return 1;
 
         char *mem = (char *)std::realloc(_bp, new_cap * sizeof(T) * 3);
         if (!mem)
@@ -80,7 +82,7 @@ namespace ggb
         _bp = mem;
         id_to_index = (T *)(mem);
         index_to_id = (T *)(mem + new_cap * sizeof(T));
-        free_id = (T *)(mem + new_cap * sizeof(T) * 2);
+        free_id     = (T *)(mem + new_cap * sizeof(T) * 2);
 
         size_t size_m = sizeof(T) * capacity;
         if (new_cap >= (capacity << 1)) // memcpy
@@ -102,7 +104,7 @@ namespace ggb
     inline typename Sparse<T>::DenseKey &Sparse<T>::operator[](SparseID id)
     {
 #ifdef DEBUG_ENABLED
-        if (id >= (i32)capacity || id == this->invalid_id())
+        if (id >= (T)capacity || id == this->invalid_id())
         {
             DEBUG_LOG("invalid id");
         }
@@ -114,7 +116,7 @@ namespace ggb
     inline const typename Sparse<T>::DenseKey &Sparse<T>::operator[](SparseID id) const
     {
 #ifdef DEBUG_ENABLED
-        if (id >= (i32)capacity || id == this->invalid_id())
+        if (id >= (T)capacity || id == this->invalid_id())
         {
             DEBUG_LOG("Sparse: invalid id\n");
         }
@@ -151,8 +153,7 @@ namespace ggb
     {
         if (size >= capacity)
         {
-            if (reserve(capacity << 1))
-                return INVALID_ID;
+            if (reserve(capacity << 1)) return INVALID_ID;
         }
 
         DenseKey index = size++;

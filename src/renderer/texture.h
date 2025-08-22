@@ -22,6 +22,7 @@ namespace texture
 
 
     /* FUNCTIONS */
+    void        init_TextureManager();
     TextureRef  create_tex2D(Texture &tex_out);
     void        remove_tex2D(Texture &tex);
 
@@ -86,7 +87,7 @@ namespace texture
 
     inline void TextureManager::init(size_t n)
     {
-        if (n > 0 && _bp)
+        if (n > 0)
         {
             char *mem = nullptr;
             mem = (char *)std::malloc(
@@ -101,16 +102,20 @@ namespace texture
                 return;
             }
             size_t offset = 0;
+            
             _bp = mem;
-
             tex_ids = (TexGL *)               (mem);
             tex_dim = (adobo::vec2f  *)       (mem + (offset += sizeof(*tex_ids) * n));
             sub_tex = (const adobo::vec4f **) (mem + (offset += sizeof(*tex_dim) * n));
             sub_n =   (i32 *)                 (mem + (offset += sizeof(*sub_tex) * n));
 
             sparse.init(n);
+            size = 0;
             capacity = n;
+            DEBUG_LOG("Initialized TextureManager(%zu).\n", capacity);
+            return;
         }
+        DEBUG_LOG("Failed to initialized TextureManager.\n");
     }
 
     inline int TextureManager::reserve(size_t new_cap)
@@ -155,12 +160,17 @@ namespace texture
             memmove(tex_dim, (_bp + (boffset -= sizeof(*tex_dim) * capacity)), sizeof(*tex_dim) * capacity);
         }
         capacity = new_cap;
+        DEBUG_LOG("Resized TextureManager(%zu).\n", capacity);
         return 0; 
     }
 
 
 
     /* FUNC DEF */
+    inline bool is_valid(Texture tex)
+    {
+        return !(tex.id < 0 || tex.id >= (i32)g_textures.capacity);
+    }
     
     /* Texture */
     inline TextureRef 
@@ -172,6 +182,13 @@ namespace texture
     inline const adobo::vec4f&
     Texture::operator[](i32 i)
     {
+        #ifdef DEBUG_ENABLED
+        if (i < 0 || i > (i32)g_textures.capacity)
+        {
+            DEBUG_LOG("Texture: INVALID ID[%d]\n", i);
+            return (*this)().sub_tex[0];
+        }
+        #endif
         return (*this)().sub_tex[i];
     }
 
@@ -206,10 +223,10 @@ namespace texture
     TextureManager::operator[](size_t index)
     {
         return TextureRef{
-            .id = tex_ids[index],
-            .tex_dim = tex_dim[index],
-            .sub_tex = sub_tex[index],
-            .sub_n = sub_n[index],
+            tex_ids[index],
+            tex_dim[index],
+            sub_tex[index],
+            sub_n[index],
         };
     }
 

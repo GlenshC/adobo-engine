@@ -53,7 +53,7 @@ namespace renderer
         glBufferData(GL_ELEMENT_ARRAY_BUFFER,
                      sizeof(g_quad_indices), g_quad_indices, GL_STATIC_DRAW);
         glBindVertexArray(0);
-        DEBUG_LOG("initialized renderer_renderer.\n");
+        DEBUG_LOG("Initialized main renderer.\n");
     }
 
 

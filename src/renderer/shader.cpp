@@ -30,6 +30,7 @@ namespace shader
 
     void create(Shader &shader, const binassets::AssetShader &vert, binassets::AssetShader &frag)
     {
+        DEBUG_LOG("[BIN] Creating Program...\n");
         create_fsource(shader, vert.data, frag.data);
         shader.vertPath = nullptr;
         shader.fragPath = nullptr;
@@ -37,6 +38,7 @@ namespace shader
 
     void create(Shader &shader, const char *vertPath, const char *fragPath)
     {
+        DEBUG_LOG("[TXT] Creating Shader...\n");
         char *vertSource = util::string_readf(vertPath);
         char *fragSource = util::string_readf(fragPath);
         create_fsource(shader, vertSource, fragSource);

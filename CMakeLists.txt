@@ -60,7 +60,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     set(CMAKE_CXX_FLAGS_DEBUG   "-g -O0")
     set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    add_compile_options(/W4 /WX)
+    add_compile_options(/W3 /wd4576)
     set(CMAKE_CXX_FLAGS_DEBUG   "/Od /Zi")
     set(CMAKE_CXX_FLAGS_RELEASE "/O2")
 endif()
@@ -87,6 +87,7 @@ add_subdirectory(vendor/cglm/ EXCLUDE_FROM_ALL)
 add_executable(${PROJECT_NAME}
     src/main.cpp
     
+    src/game/editor.cpp
     src/game/game.cpp
     src/game/gui.cpp
     
@@ -110,6 +111,7 @@ add_executable(${PROJECT_NAME}
 
     vendor/binassets/src/binasset_read.cpp
     vendor/binassets/src/binasset_json.cpp
+    vendor/aiekick/ImGuiFileDialog.cpp
 )
     
     
@@ -146,6 +148,7 @@ endif()
 target_include_directories(${PROJECT_NAME} PRIVATE
     src
     include
+    vendor
     vendor/imgui
     vendor/imgui/backends
     vendor/glad/include

@@ -33,7 +33,7 @@ namespace clk
 
         for(i32 i = 0; i < MAX_FRAME_TIMERS; i++)
         {
-            g_time.frame_timer[i] += g_time.delta;
+            g_time.frame_timer[i] += (f32)g_time.delta;
         }
         for(i32 i = 0; i < MAX_FRAME_TIMERS; i++)
         {

@@ -7,6 +7,7 @@
 #include "renderer/texture.h"
 #include "binassets/binasset_read.h"
 #include "util/debug.h"
+#include "core/constants.h"
 // #include "nlohmann/tinyxml2.h"
 
 static const char *s_texture_slots[] = {
@@ -31,6 +32,11 @@ static const char *s_texture_slots[] = {
 namespace texture
 {
     TextureManager g_textures;
+
+    void init_TextureManager()
+    {
+        g_textures.init(ADOBO_ENGINE_MIN_TEXTURE);
+    }
 
     static adobo::vec4f *calculate_uvs(f32 x, f32 y, f32 tile_w, f32 tile_h, i32 &n_out)
     {
@@ -101,6 +107,11 @@ namespace texture
 
     TextureRef create_tex2D(Texture &tex_out)
     {
+        if (g_textures.size + ADOBO_ENGINE_REALLOC_MARGIN >= g_textures.capacity) 
+        {
+            g_textures.reserve(g_textures.capacity << 1);
+        }
+        g_textures.size++;
         tex_out.id = g_textures.sparse.create_id();
         return g_textures(tex_out.id);
     }

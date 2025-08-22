@@ -11,3 +11,6 @@
 [submodule "vendor/binassets"]
 	path = vendor/binassets
 	url = https://github.com/glenshc/binassets
+[submodule "vendor/aiekick"]
+	path = vendor/aiekick
+	url = https://github.com/aiekick/ImGuiFileDialog.git

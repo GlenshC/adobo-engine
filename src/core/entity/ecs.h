@@ -1,11 +1,10 @@
 #pragma once
 
 #include "types.h"
-#include "components/transform.h"
 #include "renderer/texture.h"
-#include <vector>
+#include "core/constants.h"
 
-#define MIN_ENTITIES 256
+
 namespace ecs 
 {
     /* CONSTANTS */
@@ -23,38 +22,17 @@ namespace ecs
     extern Entity2DManager g_entities;
 
     /* FUNCTIONS */
-    void        init();
-    Entity2Dref create(Entity2D &entity_out);
-    Entity2Dref create_entity(Entity2D &entity_out);
-    void        remove_entity(Entity2D &entity);
+    void         init_Entity2DManager();
 
-    Entity2Dref create(
-        Entity2D &entity_out, 
-        const texture::Texture &tex, 
-        const adobo::vec4f &tex_uv, 
-        const f32 pos_x, 
-        const f32 pos_y, 
-        const f32 scale_x, 
-        const f32 scale_y
-    );
-    Entity2Dref create(
-        Entity2D &entity_out, 
-        const texture::Texture &tex, 
-        const adobo::vec4f &tex_uv
-    );
-    template<i32 N>
-    Entity2Dref create(
-        Entity2DGroup<N> &ents, 
-        const texture::Texture &tex, 
-        const adobo::vec4f &tex_uv, 
-        const f32 pos_x, 
-        const f32 pos_y, 
-        const f32 scale_x, 
-        const f32 scale_y
-    );
-
+    Entity2Dref  create(Entity2D &entity_out);
+    Entity2Dref  create_entity(Entity2D &entity_out);
+    void         remove_entity(Entity2D &entity);
     adobo::vec4f get_aabb(Entity2D &ent);
 
+    template<i32 N>
+    Entity2Dref create(Entity2DGroup<N> &ents, const texture::Texture &tex, const adobo::vec4f &tex_uv, const f32 pos_x, const f32 pos_y, const f32 scale_x, const f32 scale_y);
+    Entity2Dref create(Entity2D &entity_out, const texture::Texture &tex, const adobo::vec4f &tex_uv, const f32 pos_x, const f32 pos_y, const f32 scale_x, const f32 scale_y);
+    Entity2Dref create(Entity2D &entity_out, const texture::Texture &tex, const adobo::vec4f &tex_uv);
 
     /* TYPE DEFS */
     struct Entity2Dref {
@@ -63,6 +41,7 @@ namespace ecs
         adobo::vec3f      &rotation;
         texture::Texture  &tex;
         adobo::vec4f      &tex_uv;
+        i32               &type;
 
         Entity2Dref& operator=(const Entity2Dref& other);
     };
@@ -82,6 +61,7 @@ namespace ecs
         adobo::vec3f     *rotation;
         texture::Texture *textures;
         adobo::vec4f     *tex_uv;
+        i32              *type;
         ggb::Sparse<i32>  sparse;
         
         size_t size;
@@ -124,6 +104,7 @@ namespace ecs
         rotation = other.rotation;
         tex      = other.tex;
         tex_uv   = other.tex_uv;
+        type     = other.type;
 
         return *this;
     }
@@ -132,7 +113,7 @@ namespace ecs
     /* Entity2DManager */
     inline void Entity2DManager::init(size_t n)
     {
-        if (n > 0 && _bp)
+        if (n > 0)
         {
             char *mem = nullptr;
             mem = (char *)std::malloc(
@@ -140,13 +121,15 @@ namespace ecs
                 sizeof(*scale)    * n + 
                 sizeof(*rotation) * n + 
                 sizeof(*textures) * n + 
-                sizeof(*tex_uv)   * n
+                sizeof(*tex_uv)   * n +
+                sizeof(*type)     * n
             );
             if (!mem)
             {
                 DEBUG_ERR("Sparse: BAD ALLOCATION\n");
                 return;
             }
+
             size_t offset = 0;
             _bp      = mem;
             position = (adobo::vec2f *)     (mem);
@@ -154,9 +137,16 @@ namespace ecs
             rotation = (adobo::vec3f *)     (mem + (offset += n * sizeof(*scale)));
             textures = (texture::Texture *) (mem + (offset += n * sizeof(*rotation)));
             tex_uv   = (adobo::vec4f *)     (mem + (offset += n * sizeof(*textures)));
+            type     = (i32 *)              (mem + (offset += n * sizeof(*tex_uv)));
+            
             sparse.init(n);
+            size = 0;
             capacity = n;
+            
+            DEBUG_LOG("Initialized Entity2DManager(%zu).\n", capacity);
+            return;
         }
+        DEBUG_LOG("Failed to initialized Entity2DManager.\n");
     }
 
     inline int Entity2DManager::reserve(size_t new_cap)
@@ -170,7 +160,8 @@ namespace ecs
             sizeof(*scale)    * new_cap +
             sizeof(*rotation) * new_cap +
             sizeof(*textures) * new_cap +
-            sizeof(*tex_uv)   * new_cap
+            sizeof(*tex_uv)   * new_cap +
+            sizeof(*type)     * new_cap
         );
         if (!mem)
         {
@@ -181,7 +172,8 @@ namespace ecs
             sizeof(*position) * capacity +
             sizeof(*scale)    * capacity +
             sizeof(*rotation) * capacity +
-            sizeof(*textures) * capacity;
+            sizeof(*textures) * capacity +
+            sizeof(*tex_uv)   * capacity;
 
         size_t offset = 0;
         _bp = mem;
@@ -190,33 +182,39 @@ namespace ecs
         rotation    = (adobo::vec3f *)     (mem + (offset += sizeof(*scale)    * new_cap));
         textures    = (texture::Texture *) (mem + (offset += sizeof(*rotation) * new_cap));
         tex_uv      = (adobo::vec4f *)     (mem + (offset += sizeof(*textures) * new_cap));
+        type        = (i32 *)              (mem + (offset += sizeof(*tex_uv)     * new_cap));
 
         if (new_cap >= (capacity << 1)) // memcpy
         {
-            memcpy(tex_uv  , (_bp + (boffset)), sizeof(*tex_uv)   * capacity);
+            memcpy(type    , (_bp + (boffset)), sizeof(*type)     * capacity);
+            memcpy(tex_uv  , (_bp + (boffset -= sizeof(*tex_uv)   * capacity)), sizeof(*tex_uv)   * capacity);
             memcpy(textures, (_bp + (boffset -= sizeof(*textures) * capacity)), sizeof(*textures) * capacity);
             memcpy(rotation, (_bp + (boffset -= sizeof(*rotation) * capacity)), sizeof(*rotation) * capacity);
             memcpy(scale   , (_bp + (boffset -= sizeof(*scale)    * capacity)), sizeof(*scale)    * capacity);
         }
         else
         {
-            memmove(tex_uv  , (_bp + (boffset)), sizeof(*tex_uv)   * capacity);
+            memmove(type    , (_bp + (boffset)), sizeof(*type)     * capacity);
+            memmove(tex_uv  , (_bp + (boffset -= sizeof(*tex_uv)   * capacity)), sizeof(*tex_uv)   * capacity);
             memmove(textures, (_bp + (boffset -= sizeof(*textures) * capacity)), sizeof(*textures) * capacity);
             memmove(rotation, (_bp + (boffset -= sizeof(*rotation) * capacity)), sizeof(*rotation) * capacity);
             memmove(scale   , (_bp + (boffset -= sizeof(*scale)    * capacity)), sizeof(*scale)    * capacity);
         }
         capacity = new_cap;
+        sparse.reserve(new_cap);
+        DEBUG_LOG("Reserved Entity2DManager(%zu).\n", capacity);
         return 0; 
     }
 
     inline Entity2Dref Entity2DManager::operator[](size_t index)
     {
         return Entity2Dref{
-            .position = position[index],
-            .scale    = scale[index],
-            .rotation = rotation[index],
-            .tex      = textures[index],
-            .tex_uv   = tex_uv[index]
+            position[index],
+            scale[index],
+            rotation[index],
+            textures[index],
+            tex_uv[index],
+            type[index]
         };
     }
 
@@ -252,9 +250,6 @@ namespace ecs
             data[i]().scale = {scale_x, scale_y};
         }
     }
-
-
-
 
     /* FUNCTION DEFS */
 

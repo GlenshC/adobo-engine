@@ -4,11 +4,10 @@ namespace ecs
 {
     Entity2DManager g_entities;
 
-    void init()
+    void init_Entity2DManager()
     {
-        g_entities.init(MIN_ENTITIES);
+        g_entities.init(ADOBO_ENGINE_MIN_ENTITIES2D);
     }
-
 
     Entity2Dref create(Entity2D &entity_out)
     {
@@ -49,14 +48,20 @@ namespace ecs
 
     Entity2Dref create_entity(Entity2D &entity_out)
     {
+        if (g_entities.size + ADOBO_ENGINE_REALLOC_MARGIN >= g_entities.capacity) 
+        {
+            g_entities.reserve(g_entities.capacity << 1);
+        }
         entity_out.id = g_entities.sparse.create_id();
+
+        g_entities.size++;
         return g_entities(entity_out.id);
     }
 
     void remove_entity(Entity2D &entity)
     {
-        i32 index      = g_entities.sparse.remove(entity.id);
-        i32 last_index = g_entities.sparse.size;
+        i32 index         = (i32)g_entities.sparse.remove(entity.id);
+        i32 last_index    = (i32)g_entities.sparse.size;
         g_entities[index] = g_entities[last_index];
 
         entity.id = INVALID_ENTITY_ID;

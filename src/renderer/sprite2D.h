@@ -3,11 +3,10 @@
 #include "ggb/cglm.h"
 #include "types.h"
 #include "renderer/renderer.h"
-#include "components/transform.h"
 #include "renderer/texture.h"
 #include "core/entity/ecs.h"
 
-#define MAX_SPRITES 200
+#include "core/constants.h"
 
 namespace renderer
 {
@@ -15,11 +14,10 @@ namespace renderer
     typedef u16 TexGL16;
     struct RDataSprite;
     struct SpriteRef;
-    template<i32 MAX_S>
-    struct SpritesSoa;
+    struct SpritesManager;
 
     /* GLOBALS */
-    extern SpritesSoa<MAX_SPRITES> g_sprites;
+    extern SpritesManager g_sprites;
 
     /* FUNCTIONS */
     template<i32 N>
@@ -29,7 +27,7 @@ namespace renderer
     void submit_sprites(ecs::Entity2D &ent);
     void end_sprites(void);
     
-    void init_sprites(void);
+    void init_SpritesManager(void);
     void flush_sprites(void);
     void render_sprites(void);
     void clear_sprites(void);
@@ -44,48 +42,140 @@ namespace renderer
 
     struct SpriteRef
     {
-        core::Xform2Dref transform;
+        adobo::vec2f     &position;
+        adobo::vec2f     &scale;
+        adobo::vec3f     &rotation;
         adobo::vec4f     &tex_uv; 
         texture::TexGL   &tex_index;
 
         SpriteRef &operator=(SpriteRef &other)
         {
-            transform  = other.transform;
+            position   = other.position;
+            scale      = other.scale;
+            rotation   = other.rotation;
             tex_uv     = other.tex_uv;
             tex_index  = other.tex_index;
             return *this;
         }
     };
 
-    template<i32 MAX_S>
-    struct SpritesSoa
+    struct SpritesManager
     {
-        u32         vao = 0, ssbo = 0;
-        u32         shader_id = {};
+        char             *_bp;
+        RDataSprite      *data;
+        adobo::vec2f     *position;
+        adobo::vec2f     *scale;
+        adobo::vec3f     *rotation;
+        texture::Texture tex_slot[MAX_TEX_SLOTS];
+        
+        size_t  capacity;
+        size_t  tex_count;
+        size_t  size;
+        
+        u32     vao;
+        u32     ssbo;
+        u32     shader_id;
 
-        RDataSprite             data[MAX_SPRITES];
-        texture::Texture        tex_slot[MAX_TEX_SLOTS] = {};
-        core::Xform2Dsoa<MAX_S> sprites;
+        void init(size_t n);
+        i32  reserve(size_t new_cap);
+        void clear(void);
 
-        i32 tex_count      = 0;
-        i32 sprite_count   = 0;
-        const i32 capacity = MAX_S;
-
-        SpriteRef operator[](i32 index)
-        {
-            return SpriteRef{
-                .transform  = sprites[index],
-                .tex_uv     = data[index].tex_uv,
-                .tex_index  = data[index].tex_index,
-            };
-        }
-
-        void clear(void)
-        {
-            tex_count = 0;
-            sprite_count = 0;
-        }
+        SpriteRef operator[](size_t index);
     };
+
+    /* SpritesManager */
+    inline void SpritesManager::init(size_t n)
+    {
+        if (n > 0)
+        {
+            char *mem = nullptr;
+            mem = (char *)std::malloc(
+                sizeof(*data)     * n +
+                sizeof(*position) * n +
+                sizeof(*scale)    * n + 
+                sizeof(*rotation) * n
+            );
+            if (!mem)
+            {
+                DEBUG_ERR("Sparse: BAD ALLOCATION\n");
+                return;
+            }
+            size_t offset = 0;
+            _bp      = mem;
+            data     = (RDataSprite  *)     (mem);
+            position = (adobo::vec2f *)     (mem + (offset += n * sizeof(*data)));
+            scale    = (adobo::vec2f *)     (mem + (offset += n * sizeof(*position)));
+            rotation = (adobo::vec3f *)     (mem + (offset += n * sizeof(*scale)));
+            
+            size = 0;
+            capacity = n;
+            DEBUG_LOG("Initialized SpritesManager(%zu).\n", capacity);
+            return;
+        }
+        DEBUG_LOG("Failed to init SpritesManager.\n");
+    }
+
+    inline i32 SpritesManager::reserve(size_t new_cap)
+    {
+        if (new_cap <= capacity) return 1;
+
+        char *mem = (char *)std::realloc(
+            _bp,
+            sizeof(*data)     * new_cap +
+            sizeof(*position) * new_cap +
+            sizeof(*scale)    * new_cap + 
+            sizeof(*rotation) * new_cap
+        );
+        if (!mem)
+        {
+            DEBUG_ERR("Entity2DManager: Resize Error\n");
+            return 1;
+        }
+        size_t boffset = 
+            sizeof(*data)     * capacity +
+            sizeof(*position) * capacity +
+            sizeof(*scale)    * capacity; 
+
+        size_t offset = 0;
+        _bp = mem;
+        data        = (RDataSprite  *)     (mem);
+        position    = (adobo::vec2f *)     (mem + (offset += sizeof(*data)     * new_cap)); 
+        scale       = (adobo::vec2f *)     (mem + (offset += sizeof(*position) * new_cap));
+        rotation    = (adobo::vec3f *)     (mem + (offset += sizeof(*scale)    * new_cap));
+
+        if (new_cap >= (capacity << 1)) // memcpy
+        {
+            memcpy(rotation, (_bp + (boffset)), sizeof(*rotation) * capacity);
+            memcpy(scale   , (_bp + (boffset -= sizeof(*scale)    * capacity)), sizeof(*scale)    * capacity);
+            memcpy(position, (_bp + (boffset -= sizeof(*position) * capacity)), sizeof(*position) * capacity);
+        }
+        else
+        {
+            memmove(rotation, (_bp + (boffset)), sizeof(*rotation) * capacity);
+            memmove(scale   , (_bp + (boffset -= sizeof(*scale)    * capacity)), sizeof(*scale)    * capacity);
+            memmove(position, (_bp + (boffset -= sizeof(*position) * capacity)), sizeof(*position) * capacity);
+        }
+        capacity = new_cap;
+        DEBUG_LOG("Resized SpritesManager(%zu).\n", capacity);
+        return 0; 
+    }
+
+    inline SpriteRef SpritesManager::operator[](size_t index)
+    {
+        return SpriteRef{
+            position[index],
+            scale[index],
+            rotation[index],
+            data[index].tex_uv,
+            data[index].tex_index,
+        };
+    }
+
+    inline void SpritesManager::clear(void)
+    {
+        tex_count = 0;
+        size = 0;
+    }
 
     /* FUNCTION DEFS */
     template<i32 N>
