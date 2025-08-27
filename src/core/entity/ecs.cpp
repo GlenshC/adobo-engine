@@ -1,12 +1,15 @@
 #include "core/entity/ecs.h"
+#include "core/entity/hitbox.h"
 #include "core/clock.h"
 namespace ecs 
 {
     Entity2DManager g_entities;
+    HitboxManager   g_hitboxes;
 
     void init_Entity2DManager()
     {
         g_entities.init(ADOBO_ENGINE_MIN_ENTITIES2D);
+        init_HitboxManager();
     }
 
     Entity2Dref create(Entity2D &entity_out)

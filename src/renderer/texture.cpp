@@ -6,6 +6,7 @@
 
 #include "renderer/texture.h"
 #include "binassets/binasset_read.h"
+#include "binassets/binasset_stl_read.h"
 #include "util/debug.h"
 #include "core/constants.h"
 // #include "nlohmann/tinyxml2.h"
@@ -137,15 +138,35 @@ namespace texture
         data.sub_tex = calculate_uvs(atlas.dims, atlas.x, atlas.y, atlas.subtex_n);
         data.sub_n = atlas.subtex_n;
         atlas.tex = tex;
-        if (binassets::g_asset_free_on_load)
-        {
-            DEBUG_LOG("loadAtlas2D: Free on load.\n");
-            std::free(atlas.data);
-        }
         
+        DEBUG_LOG("loadAtlas2D: Free on load.\n");
+        std::free(atlas.data);
+        atlas.data = nullptr;
+
         return tex;
     }
 
+    Texture 
+    loadAtlas2D(binassets::AssetDataAtlas &atlas, const u32 format_gl)
+    {
+        Texture tex = {g_textures.sparse.invalid_id()};
+        TexGL tex_gl = load2D(atlas.data, format_gl, atlas.x, atlas.y);
+
+        TextureRef data = create_tex2D(tex);
+        data.id = tex_gl;
+        data.tex_dim = {(float)atlas.x, (float)atlas.y};
+        data.sub_tex = calculate_uvs(atlas.subtex.data(), atlas.x, atlas.y, (i32)atlas.subtex.size());
+        data.sub_n = (i32)atlas.subtex.size();
+        atlas.tex = tex;
+
+        DEBUG_LOG("loadAtlas2D: Free on load.\n");
+        std::free(atlas.data);
+        atlas.data = nullptr;
+
+        return tex;
+    }
+
+    // depreciated 
     Texture 
     loadAtlas2D(binassets::AssetIMG &img, const u32 format_gl, f32 tile_w, f32 tile_h)
     {

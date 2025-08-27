@@ -11,28 +11,46 @@ namespace renderer
     {
         DEBUG_LOG("Initializing renderer sprite2D...\n");
         glGenVertexArrays(1, &g_sprites.vao);
+        DEBUG_GLERR();
+
         glBindVertexArray(g_sprites.vao);
+        DEBUG_GLERR();
         
         glBindBuffer(GL_ARRAY_BUFFER, g_vbo_quad);
+        DEBUG_GLERR();
+
         glVertexAttribPointer(
             0, 2, GL_FLOAT, GL_FALSE, 
             4 * sizeof(float), (void *)0
-        );
-        glEnableVertexAttribArray(0);
+        ); 
+        DEBUG_GLERR();
+
+        glEnableVertexAttribArray(0); 
+        DEBUG_GLERR();
         
         glVertexAttribPointer(
             1, 2, GL_FLOAT, GL_FALSE, 
             4 * sizeof(float), (void *)(2 * sizeof(float))
-        );
-        glEnableVertexAttribArray(1);
+        ); 
+        DEBUG_GLERR();
+
+        glEnableVertexAttribArray(1); 
+        DEBUG_GLERR();
         
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_ibo_quad);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_ibo_quad); 
+        DEBUG_GLERR();
         
-        glCreateBuffers(1, &g_sprites.ssbo); // makes vbo buffers
-        glNamedBufferStorage(g_sprites.ssbo, sizeof(g_sprites.data), nullptr, GL_DYNAMIC_STORAGE_BIT | GL_MAP_WRITE_BIT);
-        
-        glBindVertexArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glCreateBuffers(1, &g_sprites.ssbo); 
+        DEBUG_GLERR(); // makes vbo buffers
+
+        glNamedBufferStorage(g_sprites.ssbo, sizeof(RDataSprite) * ADOBO_ENGINE_MAX_SPRITES, nullptr, GL_DYNAMIC_STORAGE_BIT | GL_MAP_WRITE_BIT); 
+        DEBUG_GLERR();
+
+        glBindVertexArray(0); 
+        DEBUG_GLERR();
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0); 
+        DEBUG_GLERR();
         
         g_sprites.init(ADOBO_ENGINE_MIN_SPRITES);
         DEBUG_LOG("Initalized renderer sprite2D.\n");
@@ -112,7 +130,7 @@ namespace renderer
            
             glm_translate_to(
                 GLM_MAT4_IDENTITY, 
-                (vec3){g_sprites.position[i].x, g_sprites.position[i].y, 0},
+                g_sprites.position[i],
                 data.model
             );
             glm_euler_xyz(g_sprites.rotation[i], rot);
@@ -121,6 +139,7 @@ namespace renderer
         }
         
         glNamedBufferSubData(g_sprites.ssbo, 0, g_sprites.size * sizeof(RDataSprite), g_sprites.data);
+        DEBUG_GLERR();
     }
 
     void render_sprites(void)
@@ -133,8 +152,13 @@ namespace renderer
             texture::bindAtlas2D(g_sprites.tex_slot[i], g_sprites.shader_id, i);
         }
         glBindVertexArray(g_sprites.vao);
+        DEBUG_GLERR();
+
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, g_sprites.ssbo);
+        DEBUG_GLERR();
+        
         glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, g_sprites.size);
+        DEBUG_GLERR();
         // DEBUG_LOG("render\n");
     }
 }

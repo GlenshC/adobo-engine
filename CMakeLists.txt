@@ -61,7 +61,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     add_compile_options(/W3 /wd4576)
-    set(CMAKE_CXX_FLAGS_DEBUG   "/Od /Zi")
+    set(CMAKE_CXX_FLAGS_DEBUG   "/Od /ZI")
     set(CMAKE_CXX_FLAGS_RELEASE "/O2")
 endif()
 
@@ -87,10 +87,11 @@ add_subdirectory(vendor/cglm/ EXCLUDE_FROM_ALL)
 add_executable(${PROJECT_NAME}
     src/main.cpp
     
-    src/game/editor.cpp
     src/game/game.cpp
     src/game/gui.cpp
     
+    src/core/adoboproj.cpp
+    src/core/editor.cpp
     src/core/entity/ecs.cpp
     src/core/app.cpp
     src/core/platform.cpp
@@ -111,7 +112,9 @@ add_executable(${PROJECT_NAME}
 
     vendor/binassets/src/binasset_read.cpp
     vendor/binassets/src/binasset_json.cpp
+    vendor/binassets/src/binasset_stl_read.cpp
     vendor/aiekick/ImGuiFileDialog.cpp
+    vendor/nlohmann/tinyxml2.cpp
 )
     
     
@@ -144,6 +147,10 @@ if (NOT BUILD_CLI)
         WIN32_EXECUTABLE TRUE
     )
 endif()
+
+set_target_properties(testapp PROPERTIES
+    VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     src

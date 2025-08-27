@@ -3,6 +3,7 @@
 #include "ggb/sparse.h"
 #include "renderer/shader.h"
 #include "binassets/binasset_read_decl.h"
+#include "binassets/binasset_stl_read_decl.h"
 
 #define MAX_TEXTURES 12 
 namespace texture
@@ -31,6 +32,7 @@ namespace texture
     Texture loadAtlas2D(binassets::AssetAtlas &atlas, const u32 format_gl);
     Texture loadAtlas2D(binassets::AssetIMG   &img, const u32 format_gl, f32 tile_w, f32 tile_h);
     Texture loadAtlas2D(const char *path, const u32 format_gl, f32 tile_w, f32 tile_h);
+    Texture loadAtlas2D(binassets::AssetDataAtlas &atlas, const u32 format_gl);
     
     Texture load2D(const char *path, const u32 format_gl);
     TexGL   load2D(u8 *imageData, const u32 format_gl, i32 x, i32 y);
@@ -149,17 +151,18 @@ namespace texture
 
         if (new_cap >= (capacity << 1)) // memcpy
         {
-            memcpy(sub_n  , (_bp), sizeof(*sub_n) * capacity);
+            memcpy(sub_n  , (_bp + (boffset)), sizeof(*sub_n) * capacity);
             memcpy(sub_tex, (_bp + (boffset -= sizeof(*sub_tex) * capacity)), sizeof(*sub_tex) * capacity);
             memcpy(tex_dim, (_bp + (boffset -= sizeof(*tex_dim) * capacity)), sizeof(*tex_dim) * capacity);
         }
         else
         {
-            memmove(sub_n  , (_bp), sizeof(*sub_n) * capacity);
+            memmove(sub_n  , (_bp + (boffset)), sizeof(*sub_n) * capacity);
             memmove(sub_tex, (_bp + (boffset -= sizeof(*sub_tex) * capacity)), sizeof(*sub_tex) * capacity);
             memmove(tex_dim, (_bp + (boffset -= sizeof(*tex_dim) * capacity)), sizeof(*tex_dim) * capacity);
         }
         capacity = new_cap;
+        sparse.reserve(new_cap);
         DEBUG_LOG("Resized TextureManager(%zu).\n", capacity);
         return 0; 
     }
@@ -171,6 +174,12 @@ namespace texture
     {
         return !(tex.id < 0 || tex.id >= (i32)g_textures.capacity);
     }
+
+    inline bool is_valid(Texture tex, i32 subtex_index)
+    {
+        DEBUG_LOG("Texture: %d %d\n", tex.id, subtex_index);
+        return is_valid(tex) && subtex_index >= 0 && subtex_index < tex().sub_n;
+    }
     
     /* Texture */
     inline TextureRef 
@@ -178,14 +187,15 @@ namespace texture
     {
         return g_textures(Texture::id);
     }
-
+    // get subtex
     inline const adobo::vec4f&
     Texture::operator[](i32 i)
     {
         #ifdef DEBUG_ENABLED
-        if (i < 0 || i > (i32)g_textures.capacity)
+        // DEBUG_LOG("Texture: (%d, %d)\n", i, (*this)().sub_n);
+        if (i < 0 || i >= (*this)().sub_n)
         {
-            DEBUG_LOG("Texture: INVALID ID[%d]\n", i);
+            DEBUG_LOG("Texture: INVALID SUB_TEX ID (%d, %d)\n", i, (*this)().sub_n);
             return (*this)().sub_tex[0];
         }
         #endif
@@ -242,3 +252,5 @@ namespace texture
         return (*this)(tex.id);
     }
 }
+
+// namespace adobotex = texture;

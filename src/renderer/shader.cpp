@@ -32,6 +32,7 @@ namespace shader
     {
         DEBUG_LOG("[BIN] Creating Program...\n");
         create_fsource(shader, vert.data, frag.data);
+
         shader.vertPath = nullptr;
         shader.fragPath = nullptr;
     }

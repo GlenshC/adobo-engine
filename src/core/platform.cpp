@@ -49,6 +49,7 @@ namespace plat
     
     static void fbuffer_callback_default(GLFWwindow *window, int w, int h);
     static void mousebtn_callback_default(GLFWwindow* window, int button, int action, int mods);
+    static void keyboard_callback_default(GLFWwindow* window, int key, int scancode, int action, int mods);
     static void window_focus_callback(GLFWwindow* window, int focused);
 
     int init(const char *title)
@@ -108,9 +109,6 @@ namespace plat
         // Print OpenGL version
         printf("OpenGL %s\n", glGetString(GL_VERSION));
         
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        
         
         // Set the viewport
         g_window.handle = window;
@@ -120,6 +118,7 @@ namespace plat
         glfwSetFramebufferSizeCallback(g_window.handle, fbuffer_callback_default);
         glfwSetWindowFocusCallback(window, window_focus_callback);
         glfwSetMouseButtonCallback(window, mousebtn_callback_default);
+        glfwSetKeyCallback(plat::g_window(), keyboard_callback_default);
         return 0;
     }
 
@@ -192,6 +191,15 @@ namespace plat
         }
     }
 
+    static void keyboard_callback_default(GLFWwindow* window, int key, int scancode, int action, int mods)
+    {
+        (void) window;
+        if (g_window.keyboard_cbfunc)
+        {
+            g_window.keyboard_cbfunc(key, scancode, action, mods);
+        }
+    }
+
     void set_framebuffer_cb(FBUFFERCBFUNC *funcptr)
     {
         g_window.fbuf_cbfunc = funcptr;
@@ -201,6 +209,12 @@ namespace plat
     {
         g_window.mbtn_cbfunc = funcptr;
     }
+
+    void set_keyboard_cb(KEYBOARDCBFUNC *funcptr)
+    {
+        g_window.keyboard_cbfunc = funcptr;
+    }
+
 
     void set_cursor_pos(f64 x, f64 y)
     {

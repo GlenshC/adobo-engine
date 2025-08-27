@@ -8,9 +8,11 @@
 #include "core/platform.h"
 #include "core/clock.h"
 #include "core/gui.h"
-#include "core/game.h"
+#include "core/game.h"\
 
 #include <cmath>
+
+
 
 namespace gui
 {

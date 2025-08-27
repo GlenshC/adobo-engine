@@ -15,9 +15,11 @@ namespace ecs
     struct Entity2Dref;
     struct Entity2D;
     struct Entity2DManager;
+    struct Multaabb;
     template <i32 N>
     struct Entity2DGroup;
-    
+
+
     /* GLOBALS */
     extern Entity2DManager g_entities;
 
@@ -36,7 +38,8 @@ namespace ecs
 
     /* TYPE DEFS */
     struct Entity2Dref {
-        adobo::vec2f      &position;
+        Multaabb         *&aabb;
+        adobo::vec3f      &position;
         adobo::vec2f      &scale;
         adobo::vec3f      &rotation;
         texture::Texture  &tex;
@@ -53,10 +56,17 @@ namespace ecs
         inline Entity2Dref operator()(void);
     };
 
+    struct Multaabb 
+    {
+        adobo::vec4f *aabb;
+        size_t size;
+    };
+
     struct Entity2DManager 
     {
         char             *_bp;
-        adobo::vec2f     *position;
+        Multaabb        **aabb;
+        adobo::vec3f     *position;
         adobo::vec2f     *scale;
         adobo::vec3f     *rotation;
         texture::Texture *textures;
@@ -99,6 +109,7 @@ namespace ecs
     /* Entity2Dref */
     inline Entity2Dref &Entity2Dref::operator=(const Entity2Dref &other)
     {
+        aabb     = other.aabb;
         position = other.position;
         scale    = other.scale;
         rotation = other.rotation;
@@ -117,6 +128,7 @@ namespace ecs
         {
             char *mem = nullptr;
             mem = (char *)std::malloc(
+                sizeof(*aabb)     * n +
                 sizeof(*position) * n +
                 sizeof(*scale)    * n + 
                 sizeof(*rotation) * n + 
@@ -132,7 +144,8 @@ namespace ecs
 
             size_t offset = 0;
             _bp      = mem;
-            position = (adobo::vec2f *)     (mem);
+            aabb     = (Multaabb **)        (mem);
+            position = (adobo::vec3f *)     (mem + (offset += n * sizeof(*aabb)));
             scale    = (adobo::vec2f *)     (mem + (offset += n * sizeof(*position)));
             rotation = (adobo::vec3f *)     (mem + (offset += n * sizeof(*scale)));
             textures = (texture::Texture *) (mem + (offset += n * sizeof(*rotation)));
@@ -156,6 +169,7 @@ namespace ecs
 
         char *mem = (char *)std::realloc(
             _bp,
+            sizeof(*aabb)     * new_cap +
             sizeof(*position) * new_cap +
             sizeof(*scale)    * new_cap +
             sizeof(*rotation) * new_cap +
@@ -169,6 +183,7 @@ namespace ecs
             return 1;
         }
         size_t boffset = 
+            sizeof(*aabb)     * capacity +
             sizeof(*position) * capacity +
             sizeof(*scale)    * capacity +
             sizeof(*rotation) * capacity +
@@ -177,12 +192,13 @@ namespace ecs
 
         size_t offset = 0;
         _bp = mem;
-        position    = (adobo::vec2f *)     (mem); 
+        aabb        = (Multaabb **)        (mem); 
+        position    = (adobo::vec3f *)     (mem + (offset += sizeof(*aabb)     * new_cap)); 
         scale       = (adobo::vec2f *)     (mem + (offset += sizeof(*position) * new_cap));
         rotation    = (adobo::vec3f *)     (mem + (offset += sizeof(*scale)    * new_cap));
         textures    = (texture::Texture *) (mem + (offset += sizeof(*rotation) * new_cap));
         tex_uv      = (adobo::vec4f *)     (mem + (offset += sizeof(*textures) * new_cap));
-        type        = (i32 *)              (mem + (offset += sizeof(*tex_uv)     * new_cap));
+        type        = (i32 *)              (mem + (offset += sizeof(*tex_uv)   * new_cap));
 
         if (new_cap >= (capacity << 1)) // memcpy
         {
@@ -191,6 +207,7 @@ namespace ecs
             memcpy(textures, (_bp + (boffset -= sizeof(*textures) * capacity)), sizeof(*textures) * capacity);
             memcpy(rotation, (_bp + (boffset -= sizeof(*rotation) * capacity)), sizeof(*rotation) * capacity);
             memcpy(scale   , (_bp + (boffset -= sizeof(*scale)    * capacity)), sizeof(*scale)    * capacity);
+            memcpy(position, (_bp + (boffset -= sizeof(*position) * capacity)), sizeof(*position) * capacity);
         }
         else
         {
@@ -199,6 +216,7 @@ namespace ecs
             memmove(textures, (_bp + (boffset -= sizeof(*textures) * capacity)), sizeof(*textures) * capacity);
             memmove(rotation, (_bp + (boffset -= sizeof(*rotation) * capacity)), sizeof(*rotation) * capacity);
             memmove(scale   , (_bp + (boffset -= sizeof(*scale)    * capacity)), sizeof(*scale)    * capacity);
+            memmove(position, (_bp + (boffset -= sizeof(*position) * capacity)), sizeof(*position) * capacity);
         }
         capacity = new_cap;
         sparse.reserve(new_cap);
@@ -209,6 +227,7 @@ namespace ecs
     inline Entity2Dref Entity2DManager::operator[](size_t index)
     {
         return Entity2Dref{
+            aabb[index],
             position[index],
             scale[index],
             rotation[index],
@@ -266,6 +285,8 @@ namespace ecs
         }
         return ents();
     }
+
+    void update();
 }
 /*
     Transform	    position, rotation, scale	                        World transform

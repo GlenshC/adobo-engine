@@ -23,67 +23,90 @@
 #include "ggb/data_struct.h"
 
 #include "imgui.h"
-#include "game/editor.h"
+#include "core/editor.h"
 
 static void win_resize(int width, int height);
 static void mbtn_callback(int button, int action, int mods);
-static void key_input(GLFWwindow* window, int key, int scancode, int action, int mods);
+static void key_input(int key, int scancode, int action, int mods);
 
-static ecs::Entity2D         player;
-static shader::Shader s_sprite_shader;
-static texture::Texture         shoot, shoot_hud, shoot_stall;
-static mat4                     u_projection = GLM_MAT2_IDENTITY_INIT;
+enum EntityType
+{
+    EntPlayer = 0
+};
+
+
+void update_player(const ecs::Entity2Dref &data)
+{
+    const f32 speed = 0.001f;
+    if (glfwGetKey(plat::g_window(), GLFW_KEY_W))
+    {
+        data.position.y -= speed;
+    }
+    if (glfwGetKey(plat::g_window(), GLFW_KEY_S))
+    {
+        data.position.y += speed;
+    }
+    if (glfwGetKey(plat::g_window(), GLFW_KEY_A))
+    {
+        data.position.x -= speed;
+    }
+    if (glfwGetKey(plat::g_window(), GLFW_KEY_D))
+    {
+        data.position.x += speed;
+    }
+}
+
+void ecs::update()
+{
+    adobo::AdoboScene *s;
+    if ((s = editor::proj_active_scene()))
+    {
+        for (auto &e : s->m_entities)
+        {
+            if (e.m_id().type == EntPlayer)
+            {
+                update_player(e.m_id());
+            }
+        }
+    }
+}
+
 namespace game {
 
     void init(void) 
     {
         // INITS
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         texture::set_onload_flipv(false);
         plat::set_vsync(true);
-        glfwSetKeyCallback(plat::g_window(), key_input);
         plat::set_mousebtn_cb(mbtn_callback);
+        plat::set_keyboard_cb(key_input);
         plat::set_framebuffer_cb(win_resize);
-        // editor::editor_init();
+        editor::editor_init();
 
-        bsst::assets_free_on_load(true);
-        bsst::assets_load_bin("./assets/bin.glnsh");
-        bsst::assets_upload_atlases();
+        // glAlphaFunc(GL_GREATER, 0.5);
+        // glEnable(GL_ALPHA_TEST);
 
-        auto &assets = bsst::g_assets;
-        shader::create(s_sprite_shader, "./assets/shader/sprite.vert", "./assets/shader/sprite.frag");
-
-        shoot = assets.atlases[BSST_ATLAS::SHOOT];
-        shoot_hud = assets.atlases[BSST_ATLAS::SHOOT_HUD];
-        shoot_stall = assets.atlases[BSST_ATLAS::SHOOT_STALL];
-
-        {
-            auto data = ecs::create(player);
-            data.position = {0.5f, 0.94f};
-            data.scale = {0.1f, 0.36f};
-
-            data.tex = assets.atlases[BSST_ATLAS::SHOOT];
-            data.tex_uv = assets.atlases[BSST_ATLAS::SHOOT][BSST_SHOOT::RIFLE];
-        }
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         
-        glm_mat4_identity(u_projection);
-        glm_ortho(0.0f, 1.0f, 1.0f, 0, -1.0f, 1.0f, u_projection);
-
+        glEnable(GL_DEPTH_TEST);
     }
-
+    
     void update(double dTime)
     {
         (void) dTime;
-    }
+        ecs::update();
 
+    }
+    
     void render(void)
     {
-        shader::bind(s_sprite_shader);
-        shader::set_uniform_mat4(s_sprite_shader, "u_projection", u_projection);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
+        glDepthMask(GL_FALSE);
         
-        renderer::begin_sprites(s_sprite_shader);
-        renderer::submit_sprites(player);
-        renderer::end_sprites();
+        editor::editor_render();
+        glDepthMask(GL_TRUE);
     }
 
     void shutdown(void)
@@ -124,7 +147,7 @@ namespace game {
         }
         ImGui::End();
 
-        // editor::editor_gui();
+        editor::editor_gui();
     }
 
 }
@@ -143,11 +166,16 @@ void mbtn_callback(int button, int action, int mods)
     }
 }
 
-void key_input(GLFWwindow *window, int key, int scancode, int action, int mods)
+void key_input(int key, int scancode, int action, int mods)
 {
-    (void)window, (void)scancode, (void)mods, (void) action, (void) key;
+    (void)scancode, (void)mods, (void) action, (void) key;
     if (action == GLFW_PRESS)
     {
+        if (key == GLFW_KEY_S && (mods & GLFW_MOD_CONTROL))
+        {
+            DEBUG_LOG("SAVING\n");
+            editor::editor_save();
+        }
 
     }
 }

@@ -1,5 +1,7 @@
 # Prerequisites
 build/
+out/
+.vs/
 .cache/
 
 *.d

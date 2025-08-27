@@ -13,7 +13,7 @@ namespace renderer
     extern u32 g_vao_quad, g_vbo_quad, g_ibo_quad;
     
     void init(void);
-    void draw_test_triangle(shader::Shader &shader);
+    void draw_test_triangle();
     void init_test_triangle();
 }
 /*     

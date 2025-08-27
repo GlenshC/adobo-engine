@@ -42,7 +42,7 @@ namespace renderer
 
     struct SpriteRef
     {
-        adobo::vec2f     &position;
+        adobo::vec3f     &position;
         adobo::vec2f     &scale;
         adobo::vec3f     &rotation;
         adobo::vec4f     &tex_uv; 
@@ -63,7 +63,7 @@ namespace renderer
     {
         char             *_bp;
         RDataSprite      *data;
-        adobo::vec2f     *position;
+        adobo::vec3f     *position;
         adobo::vec2f     *scale;
         adobo::vec3f     *rotation;
         texture::Texture tex_slot[MAX_TEX_SLOTS];
@@ -103,7 +103,7 @@ namespace renderer
             size_t offset = 0;
             _bp      = mem;
             data     = (RDataSprite  *)     (mem);
-            position = (adobo::vec2f *)     (mem + (offset += n * sizeof(*data)));
+            position = (adobo::vec3f *)     (mem + (offset += n * sizeof(*data)));
             scale    = (adobo::vec2f *)     (mem + (offset += n * sizeof(*position)));
             rotation = (adobo::vec3f *)     (mem + (offset += n * sizeof(*scale)));
             
@@ -139,7 +139,7 @@ namespace renderer
         size_t offset = 0;
         _bp = mem;
         data        = (RDataSprite  *)     (mem);
-        position    = (adobo::vec2f *)     (mem + (offset += sizeof(*data)     * new_cap)); 
+        position    = (adobo::vec3f *)     (mem + (offset += sizeof(*data)     * new_cap)); 
         scale       = (adobo::vec2f *)     (mem + (offset += sizeof(*position) * new_cap));
         rotation    = (adobo::vec3f *)     (mem + (offset += sizeof(*scale)    * new_cap));
 
