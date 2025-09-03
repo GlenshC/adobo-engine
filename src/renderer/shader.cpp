@@ -64,7 +64,7 @@ namespace shader
         glUseProgram(0);
     }
 
-    void set_uniform_mat4(const Shader &shader, const char *name, mat4 value)
+    void set_uniform_mat4(const Shader &shader, const char *name, const mat4 value)
     {
         glUniformMatrix4fv(
             glGetUniformLocation(shader.id, name), 1,
@@ -72,7 +72,7 @@ namespace shader
         );
     }
 
-    void set_uniform_vec4(const Shader &shader, const char *name, vec4 value)
+    void set_uniform_vec4(const Shader &shader, const char *name, const vec4 value)
     {
         glUniform4fv(
             glGetUniformLocation(shader.id, name), 
@@ -80,7 +80,7 @@ namespace shader
         );
     }
 
-    void set_uniform_vec2(const Shader &shader, const char *name, vec2 value)
+    void set_uniform_vec2(const Shader &shader, const char *name, const vec2 value)
     {
         glUniform2fv(
             glGetUniformLocation(shader.id, name), 
@@ -88,7 +88,7 @@ namespace shader
         );
     }
 
-    void set_uniform_f32(const Shader &shader, const char *name, f32 value)
+    void set_uniform_f32(const Shader &shader, const char *name, const f32 value)
     {
         glUniform1f(
             glGetUniformLocation(shader.id, name), 
@@ -96,7 +96,7 @@ namespace shader
         );
     }
 
-    void set_uniform_i32(const Shader &shader, const char *name, i32 value)
+    void set_uniform_i32(const Shader &shader, const char *name, const i32 value)
     {
         glUniform1i(
             glGetUniformLocation(shader.id, name), 
@@ -105,7 +105,7 @@ namespace shader
     }
 
     // overload for shader_id
-    void set_uniform_mat4(const u32 shader_id, const char *name, mat4 value)
+    void set_uniform_mat4(const u32 shader_id, const char *name, const mat4 value)
     {
         glUniformMatrix4fv(
             glGetUniformLocation(shader_id, name), 1,
@@ -113,21 +113,21 @@ namespace shader
         );
     }
 
-    void set_uniform_vec4(const u32 shader_id, const char *name, vec4 value)
+    void set_uniform_vec4(const u32 shader_id, const char *name, const vec4 value)
     {
         glUniform4fv(
             glGetUniformLocation(shader_id, name), 
             1, (float *) value
         );
     }
-    void set_uniform_vec3(const Shader &shader, const char *name, vec3 value)
+    void set_uniform_vec3(const Shader &shader, const char *name, const vec3 value)
     {
         glUniform3fv(
             glGetUniformLocation(shader.id, name), 
             1, (float *) value
         );
     }
-    void set_uniform_vec3(const u32 shader_id, const char *name, vec3 value)
+    void set_uniform_vec3(const u32 shader_id, const char *name, const vec3 value)
     {
         glUniform3fv(
             glGetUniformLocation(shader_id, name), 
@@ -135,7 +135,7 @@ namespace shader
         );
     }
 
-    void set_uniform_vec2(const u32 shader_id, const char *name, vec2 value)
+    void set_uniform_vec2(const u32 shader_id, const char *name, const vec2 value)
     {
         glUniform2fv(
             glGetUniformLocation(shader_id, name), 
@@ -143,7 +143,7 @@ namespace shader
         );
     }
 
-    void set_uniform_f32(const u32 shader_id, const char *name, f32 value)
+    void set_uniform_f32(const u32 shader_id, const char *name, const f32 value)
     {
         glUniform1f(
             glGetUniformLocation(shader_id, name), 
@@ -151,7 +151,7 @@ namespace shader
         );
     }
 
-    void set_uniform_i32(const u32 shader_id, const char *name, i32 value)
+    void set_uniform_i32(const u32 shader_id, const char *name, const i32 value)
     {
         glUniform1i(
             glGetUniformLocation(shader_id, name), 

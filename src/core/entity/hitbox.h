@@ -9,7 +9,8 @@
 
 namespace ecs
 {
-    typedef i32 HitboxID;
+    /* TAGS */
+    typedef u16 HitboxID, HitboxIndex;
     struct HitboxAABB;
     struct HitboxCircle;
     struct Hitbox;
@@ -22,80 +23,181 @@ namespace ecs
 
     struct HitboxAABB 
     {
-        adobo::vec4f *aabb;
-        u32 size, capacity;
+        u16 type, size, capacity, id;
+        adobo::vec4f *data;
 
-        void init(u32 n);
-        i32  reserve(u32 new_cap);
-        // adobo::vec4f &emplace_back()
+        void init(u16 n);
+        i32  reserve(u16 new_cap);
+
+        // soon
+        void init(const HitboxAABB &aabb, const adobo::vec3f& ent_pos, const adobo::vec2f &ent_scale);
+        void update(const adobo::vec3f &ent_pos, const adobo::vec2f &ent_scale);
+        
+        adobo::vec4f &emplace_back(f32 left, f32 top, f32 right, f32 bottom);
+        adobo::vec4f &emplace_back(adobo::vec4f &aabb);
+        adobo::vec4f &operator[](u16 i);
     };
 
     struct HitboxCircle
     {
-        adobo::vec3f *circle;
-        u32 size, capacity;
+        u16 type, size, capacity, id;
+        adobo::vec3f *data;
 
-        void init(u32 n);
-        i32  reserve(u32 new_cap);
+        void init(u16 n);
+        void init(const HitboxCircle &circle, const adobo::vec3f& ent_pos, const adobo::vec2f &ent_scale);
+
+        i32  reserve(u16 new_cap);
+        adobo::vec3f &emplace_back(f32 x, f32 y, f32 radius);
+        adobo::vec3f &emplace_back(adobo::vec3f &circle);
+        adobo::vec3f &operator[](u16 i);
     };
-
+    
     union HitboxUnion
     {
+        u16 type;
         HitboxAABB   aabb;
         HitboxCircle circle;
     };
-
+    
     enum HitboxType
     {
-        HITBOX_TYPE_AABB,
-        HITBOX_TYPE_CIRCLE 
+        HITBOX_TYPE_INVALID     = 0,
+        HITBOX_TYPE_AABB        = 0b001,
+        HITBOX_TYPE_CIRCLE      = 0b010,
+        HITBOX_FOR_ENTITY       = 0b100,
+        HITBOX_TYPE_AABB_ENT    = 0b101,
+        HITBOX_TYPE_CIRCLE_ENT  = 0b110,
     };
-
+    
     struct Hitbox
     {
         HitboxID id;
 
-        HitboxAABB   &get_aabb();
-        HitboxCircle &get_circle();
-        HitboxType   &get_type();
+        bool is_valid();
+
+        template<typename Tag>
+        auto& get(HitboxIndex);
+
+        template<typename Tag>
+        auto& get();
+
+        template<typename Tag>
+        auto get_val();
+
+        template<typename Tag>
+        auto get_val(HitboxIndex);
     };
+
 
     struct HitboxManager
     {
         char                 *_bp;
         ecs::HitboxUnion     *hitboxes;
-        ecs::HitboxType      *type;
-        ggb::Sparse<HitboxID>      sparse;
+        ggb::Sparse<HitboxID> sparse;
 
         size_t size;
         size_t capacity;
 
         void init(size_t n);
         i32  reserve(size_t new_cap);
-        HitboxType &get_type(HitboxID hid);
-        HitboxType &get_type(Hitbox &hitbox);
-
+        bool is_valid(HitboxID id);
         HitboxUnion &operator[](size_t index);
-        HitboxUnion &operator()(HitboxID hid);
-        HitboxUnion &operator()(Hitbox &hitbox);
+
+        template<typename T>
+        auto& get(u16 index);
+
+        template<typename T>
+        auto get_val(u16 index);
     };
 
-    /* HitboxAABB */
 
-    inline void HitboxAABB::init(u32 n)
+    /*********************
+     *                   *
+     * FUNCTIONS         *
+     *                   *
+     *********************/
+
+    template<HitboxType T>
+    inline auto& create_hitbox(Hitbox&);
+
+    template<>
+    inline auto& create_hitbox<HITBOX_TYPE_AABB>(Hitbox &hitbox_out)
+    {
+        if (g_hitboxes.size + ADOBO_ENGINE_REALLOC_MARGIN >= g_hitboxes.capacity) 
+        {
+            g_hitboxes.reserve(g_hitboxes.capacity << 1);
+        }
+        HitboxID index = 0;
+        hitbox_out.id = g_hitboxes.sparse.create_id(index);
+
+        g_hitboxes.size++;
+        g_hitboxes.hitboxes[index].aabb.init(1);
+        g_hitboxes.hitboxes[index].type = HITBOX_TYPE_AABB;
+        g_hitboxes.hitboxes[index].aabb.id = hitbox_out.id;
+        return g_hitboxes[index].aabb;
+    }
+
+    template<>
+    inline auto& create_hitbox<HITBOX_TYPE_CIRCLE>(Hitbox &hitbox_out)
+    {
+        if (g_hitboxes.size + ADOBO_ENGINE_REALLOC_MARGIN >= g_hitboxes.capacity) 
+        {
+            g_hitboxes.reserve(g_hitboxes.capacity << 1);
+        }
+        HitboxID index = 0;
+        hitbox_out.id = g_hitboxes.sparse.create_id(index);
+
+        g_hitboxes.size++;
+        g_hitboxes.hitboxes[index].circle.init(1);
+        g_hitboxes.hitboxes[index].type = HITBOX_TYPE_CIRCLE;
+        g_hitboxes.hitboxes[index].circle.id = hitbox_out.id;
+        return g_hitboxes[index].circle;
+    }
+
+    /*********************
+     *                   *
+     * METHODS           *
+     *                   *
+     *********************/
+
+    /* HitboxAABB */
+    inline adobo::vec4f& HitboxAABB::emplace_back(f32 x, f32 y, f32 width, f32 height)
+    {
+        if (HitboxAABB::size >= capacity)
+        {
+            HitboxAABB::reserve(capacity << 1);
+        }
+        HitboxAABB::data[size].x = x;         
+        HitboxAABB::data[size].y = y;         
+        HitboxAABB::data[size].z = width;         
+        HitboxAABB::data[size].w = height; 
+
+        return HitboxAABB::data[size++];  
+    }
+
+    inline adobo::vec4f& HitboxAABB::emplace_back(adobo::vec4f &item)
+    {
+        if (HitboxAABB::size >= capacity)
+        {
+            HitboxAABB::reserve(capacity << 1);
+        }
+        return HitboxAABB::data[size++] = item;         
+    }
+
+    inline void HitboxAABB::init(u16 n)
     {
         if (n > 0)
         {
             char *mem = nullptr;
             mem = (char *)std::malloc(
-                sizeof(*aabb));
+                sizeof(*data));
             if (!mem)
             {
                 DEBUG_ERR("HitboxAABB: BAD ALLOCATION\n");
                 return;
             }
 
-            aabb = (adobo::vec4f *)mem;
+            data = (adobo::vec4f *)mem;
 
             size = 0;
             capacity = n;
@@ -105,20 +207,20 @@ namespace ecs
         DEBUG_LOG("Failed to initialized HitboxAABB.\n");
     }
 
-    inline i32 HitboxAABB::reserve(u32 new_cap)
+    inline i32 HitboxAABB::reserve(u16 new_cap)
     {
         if (new_cap <= capacity)
             return 1;
 
         char *mem = (char *)std::realloc(
-            aabb,
-            sizeof(*aabb) * new_cap);
+            data,
+            sizeof(*data) * new_cap);
         if (!mem)
         {
             DEBUG_ERR("HitboxAABB: Resize Error\n");
             return 1;
         }
-        aabb = (adobo::vec4f *)mem;
+        data = (adobo::vec4f *)mem;
         capacity = new_cap;
         DEBUG_LOG("Reserved HitboxAABB(%u).\n", capacity);
         return 0;
@@ -126,20 +228,47 @@ namespace ecs
 
     /* Hitbox Circle */
 
-    inline void HitboxCircle::init(u32 n)
+    inline adobo::vec3f &HitboxCircle::operator[](u16 i)
+    {
+        return HitboxCircle::data[i]; 
+    }
+    
+    inline adobo::vec3f &HitboxCircle::emplace_back(f32 x, f32 y, f32 radius)
+    {
+        if (HitboxCircle::size >= capacity)
+        {
+            HitboxCircle::reserve(capacity << 1);
+        }
+        HitboxCircle::data[size].x = x;         
+        HitboxCircle::data[size].y = y;         
+        HitboxCircle::data[size].z = radius;         
+
+        return HitboxCircle::data[size++];  
+    }
+
+    inline adobo::vec3f &HitboxCircle::emplace_back(adobo::vec3f &item)
+    {
+        if (HitboxCircle::size >= capacity)
+        {
+            HitboxCircle::reserve(capacity << 1);
+        }
+        return HitboxCircle::data[size++] = item; 
+    }
+
+    inline void HitboxCircle::init(u16 n)
     {
         if (n > 0)
         {
             char *mem = nullptr;
             mem = (char *)std::malloc(
-                sizeof(*circle));
+                sizeof(*data));
             if (!mem)
             {
                 DEBUG_ERR("HitboxCircle: BAD ALLOCATION\n");
                 return;
             }
 
-            circle = (adobo::vec3f *)mem;
+            data = (adobo::vec3f *)mem;
 
             size = 0;
             capacity = n;
@@ -149,62 +278,48 @@ namespace ecs
         DEBUG_LOG("Failed to initialized HitboxCircle.\n");
     }
 
-    inline i32 HitboxCircle::reserve(u32 new_cap)
+    inline i32 HitboxCircle::reserve(u16 new_cap)
     {
         if (new_cap <= capacity)
             return 1;
 
         char *mem = (char *)std::realloc(
-            circle,
-            sizeof(*circle) * new_cap);
+            data,
+            sizeof(*data) * new_cap);
         if (!mem)
         {
             DEBUG_ERR("HitboxCircle: Resize Error\n");
             return 1;
         }
-        circle = (adobo::vec3f *)mem;
+        data = (adobo::vec3f *)mem;
         capacity = new_cap;
         DEBUG_LOG("Reserved HitboxCircle(%u).\n", capacity);
         return 0;
     }
 
-    /* Hitbox */
-    inline HitboxAABB &Hitbox::get_aabb()
-    {
-        return g_hitboxes(id).aabb;
-    }
-
-    inline HitboxCircle &Hitbox::get_circle()
-    {
-        return g_hitboxes(id).circle;
-    }
-    
-    inline HitboxType &Hitbox::get_type()
-    {
-        return g_hitboxes.get_type(id);
-    }
-
     /* HitboxManager */
+    inline bool HitboxManager::is_valid(HitboxID id)
+    {
+        return HitboxManager::sparse.is_valid(id);
+    }
+
     inline void HitboxManager::init(size_t n)
     {
         if (n > 0)
         {
             char *mem = nullptr;
-            mem = (char *)std::malloc(
-                sizeof(*hitboxes) * n +
-                sizeof(*type) * n
+            mem = (char *)std::calloc(
+                1,
+                sizeof(*hitboxes) * n
             );
             if (!mem)
             {
                 DEBUG_ERR("HitboxManager: BAD ALLOCATION\n");
                 return;
             }
-            size_t offset = 0;
             
             _bp = mem;
-            hitboxes = (HitboxUnion *)        (mem);
-            type     = (HitboxType  *)        (mem + (offset += sizeof(*hitboxes)* n));
-
+            hitboxes = (HitboxUnion *) (mem);
             sparse.init(n);
             size = 0;
             capacity = n;
@@ -221,43 +336,20 @@ namespace ecs
 
         char *mem = (char *)std::realloc(
             _bp,
-            sizeof(*hitboxes)     * new_cap +
-            sizeof(*type) * new_cap
+            sizeof(*hitboxes) * new_cap
         );
         if (!mem)
         {
             DEBUG_ERR("HitboxManager: Resize Error\n");
             return 1;
         }
-        size_t boffset = sizeof(*hitboxes) * capacity;
 
-        size_t offset = 0;
         _bp = mem;
         hitboxes = (HitboxUnion *) (mem); 
-        type     = (HitboxType  *) (mem + (offset += sizeof(*hitboxes) * new_cap)); 
-
-        if (new_cap >= (capacity << 1)) // memcpy
-        {
-            memcpy(type,  (_bp + (boffset)), sizeof(*type) * capacity);
-        }
-        else
-        {
-            memmove(type, (_bp + (boffset)), sizeof(*type) * capacity);
-        }
         capacity = new_cap;
         sparse.reserve(new_cap);
         DEBUG_LOG("Reserved HitboxManager(%zu).\n", capacity);
         return 0; 
-    }
-
-    inline HitboxType &HitboxManager::get_type(HitboxID hid)
-    {
-        return type[sparse[hid]];
-    }
-
-    inline HitboxType &HitboxManager::get_type(Hitbox &hitbox)
-    {
-        return type[sparse[hitbox.id]];
     }
 
     inline HitboxUnion&
@@ -266,21 +358,93 @@ namespace ecs
         return hitboxes[index];
     }
 
-    inline HitboxUnion&
-    HitboxManager::operator()(HitboxID hid)
-    {
-        return hitboxes[sparse[hid]];
-    }
-
-    inline HitboxUnion& 
-    HitboxManager::operator()(Hitbox &hitbox)
-    {
-        return hitboxes[sparse[hitbox.id]];
-    }
-
     inline void init_HitboxManager()
     {
         g_hitboxes.init(ADOBO_ENGINE_MIN_HITBOXES);
     }
     
+    
+    template<>
+    inline auto HitboxManager::get_val<Hitbox>(HitboxID id)
+    {
+        return sparse[id];
+    }
+
+    template<>
+    inline auto HitboxManager::get_val<HitboxType>(u16 index)
+    {
+        return hitboxes[index].type;
+    }
+
+    template<>
+    inline auto& HitboxManager::get<HitboxUnion>(u16 index)
+    {
+        return hitboxes[index];
+    }
+
+
+    /* Hitbox */
+
+
+    inline bool Hitbox::is_valid()
+    {
+        return g_hitboxes.is_valid(id);
+    }
+
+    template<>
+    inline auto Hitbox::get_val<Hitbox>()
+    {
+        return g_hitboxes.get_val<Hitbox>(id);
+    }
+    
+    template<>
+    inline auto Hitbox::get_val<HitboxType>(HitboxIndex index)
+    {
+        return g_hitboxes.get_val<HitboxType>(index);
+    }
+
+    template<>
+    inline auto& Hitbox::get<HitboxUnion>(HitboxIndex index)
+    {
+        return g_hitboxes.get<HitboxUnion>(index);
+    }
+
+    template<>
+    inline auto& Hitbox::get<HitboxAABB>(HitboxIndex index)
+    {
+        return g_hitboxes.get<HitboxUnion>(index).aabb;
+    }
+
+    template<>
+    inline auto& Hitbox::get<HitboxCircle>(HitboxIndex index)
+    {
+        return g_hitboxes.get<HitboxUnion>(index).circle;
+    }
+
+
+    /*  */
+    template<>
+    inline auto Hitbox::get_val<HitboxType>()
+    {
+        return g_hitboxes.get_val<HitboxType>(g_hitboxes.get_val<Hitbox>(id));
+    }
+
+    template<>
+    inline auto& Hitbox::get<HitboxUnion>()
+    {
+        return g_hitboxes.get<HitboxUnion>(g_hitboxes.get_val<Hitbox>(id));
+    }
+
+    template<>
+    inline auto& Hitbox::get<HitboxAABB>()
+    {
+        return g_hitboxes.get<HitboxUnion>(g_hitboxes.get_val<Hitbox>(id)).aabb;
+    }
+
+    template<>
+    inline auto& Hitbox::get<HitboxCircle>()
+    {
+        return g_hitboxes.get<HitboxUnion>(g_hitboxes.get_val<Hitbox>(id)).circle;
+    }
+
 }

@@ -1,3 +1,5 @@
+#include <glad/gl.h>
+
 #include "imgui.h"
 #include "types.h"
 
@@ -8,6 +10,7 @@
 #include "cglm/cglm.h"
 
 #include "core/entity/ecs.h"
+#include "core/entity/hitbox.h"
 #include "core/platform.h"
 #include "renderer/sprite2D.h"
 #include "renderer/shader.h"
@@ -22,13 +25,18 @@
 
 namespace editor
 {
+    std::vector<adobo::vec4f> draw_rect_buffer;
     bool is_valid(const i32 tex_index);
     bool is_valid(const i32 tex_index,const i32 subtex_index);
-    bool is_valid_ent(adobo::AdoboScene &scene, i32 ent_index);
+    bool is_valid_ent(adobo::AdoboScene *scene, i32 ent_index);
+    bool is_valid_ent(i32 ent_index);
 
     struct EditorState
     {
+        ecs::HitboxType hitbox_type;
         i32     sel_ent_index;
+        i32     sel_hitbox_index;
+        i32     sel_subhitbox_index;
         i32     sel_tex_index;
         i32     sel_subtex_index;
         i32     sel_ent_scene_index;
@@ -38,7 +46,7 @@ namespace editor
         char    buffer_scene[32];
     };
 
-    EditorState g_state = {0, -1, -1, -1, 0, "\0", "\0"};
+    EditorState g_state = {ecs::HITBOX_TYPE_AABB, 0, -1, -1, -1, -1, -1, 0, "\0", "\0"};
     
     static mat4                u_projection   = GLM_MAT4_IDENTITY_INIT;
     static shader::Shader      editor_shader;
@@ -46,23 +54,29 @@ namespace editor
     adobo::AdoboProj project = {};
     
     
-    void file_dialog_gui();
     void scene_create_entity();
+    void proj_create_hitbox();
+
+    void draw_ent_hitbox(ecs::HitboxAABB &aabb, const adobo::vec3f &ent_pos, const adobo::vec2f &ent_scale);
+    void draw_begin_hitbox();
+    void draw_submit_ent_hitbox(ecs::HitboxAABB &aabb, const adobo::vec3f &ent_pos, const adobo::vec2f &ent_scale);
+    void draw_end_hitbox();
+
+    void file_dialog_gui();
     void gui_entity_list();
     void gui_entity_inspector();
+    void gui_section_hitbox_editor();
     void gui_asset_browser();
+
+    u8 component_uniform_dragf2(const char*name, f32 *v, u8 *state);
+    bool component_input_int(const char* label, int *v, int min, int max, int step = 1, int step_fast = 100, ImGuiInputTextFlags flags = 0);
     void button_save_proj();
     void button_load_asset();
     void button_load_proj();
 
-    // load proj
-    // load atlas
-
-    // load shader
-    // load imgs // not right now
-    // write proj
-    
-    // try  null
+    void gui_section_hitbox_editor()
+    {
+    }
 
     void editor_init()
     {
@@ -101,15 +115,24 @@ namespace editor
         shader::bind(editor_shader);
         shader::set_uniform_mat4(editor_shader, "u_projection", u_projection);
 
+        draw_begin_hitbox();
         renderer::begin_sprites(editor_shader);
         if ((scene = proj_active_scene()))
         {
             for (auto &e : scene->m_entities)
             {
                 renderer::submit_sprites(e.m_id);
+                ecs::Hitbox hbid = e.m_id.get_val<ecs::Tag_Hitbox>();
+                if (hbid.is_valid())
+                {
+                    auto &hb = hbid.get<ecs::HitboxUnion>();
+                    if (hb.type & ecs::HITBOX_TYPE_AABB)
+                        draw_submit_ent_hitbox(hb.aabb, e.m_id.get<ecs::Tag_Position>(), e.m_id.get<ecs::Tag_Scale>());
+                }
             }
         }
         renderer::end_sprites();
+        draw_end_hitbox();
     }
     
     void scene_create_entity()
@@ -126,10 +149,91 @@ namespace editor
                 project.m_assets,
                 g_state.buffer_ent,
                 g_state.sel_tex_index,
-                g_state.sel_subtex_index);
+                g_state.sel_subtex_index
+            );
             g_state.buffer_ent[0] = 0;
         }
     }
+
+    void proj_create_hitbox()
+    {
+        adobo::AdoboScene *scene = proj_active_scene();
+        if (is_valid_ent(scene, g_state.sel_ent_index))
+        {
+            auto &ent = scene->m_entities[g_state.sel_ent_index];
+            ecs::Hitbox &ent_hitbox = ent.m_id.get<ecs::Tag_Hitbox>();
+            
+            if (g_state.hitbox_type == ecs::HITBOX_TYPE_AABB)
+            {
+                DEBUG_LOG("Creating HitboxAABB\n");
+                ecs::HitboxAABB &aabb = ecs::create_hitbox<ecs::HITBOX_TYPE_AABB>(ent_hitbox);
+
+                aabb.emplace_back(0.5f, 0.5f, 1.0f, 1.0f);
+                DEBUG_LOG("Created HitboxAABB\n");
+            } 
+            else
+            {
+                DEBUG_LOG("Creating HitboxCircle\n");
+                ecs::HitboxCircle &circle = ecs::create_hitbox<ecs::HITBOX_TYPE_CIRCLE>(ent_hitbox);
+                
+                circle.emplace_back(0.25f, 0.25f, 0.5f);
+                DEBUG_LOG("Created HitboxCircle\n");
+            }
+            ent.m_hitbox_index = project.m_hitboxes.size();
+            g_state.sel_hitbox_index = (i32)project.m_hitboxes.size();
+            g_state.sel_subhitbox_index = 0;
+            project.m_hitboxes.push_back(ent_hitbox);
+        }
+    }
+
+    void draw_ent_hitbox(ecs::HitboxAABB &aabb, const adobo::vec3f &ent_pos, const adobo::vec2f &ent_scale)
+    {
+        adobo::vec4f rect;
+        adobo::vec2f ent_topleft = {ent_pos.x - (0.5f * ent_scale.x), ent_pos.y - (0.5f * ent_scale.y)};
+
+        for (int i = 0; i < aabb.size; i++)
+        {
+            rect.x = ent_topleft.x + aabb.data[i].x * ent_scale.x;
+            rect.y = ent_topleft.y + aabb.data[i].y * ent_scale.y;
+            rect.z = aabb.data[i].z * ent_scale.x;
+            rect.w = aabb.data[i].w * ent_scale.y;
+            
+            renderer::draw_shape_rect(rect, u_projection);
+        }
+        // glEnable(GL_DEPTH_TEST);
+    }
+
+    void draw_begin_hitbox()
+    {
+        draw_rect_buffer.clear();
+    }
+
+    void draw_submit_ent_hitbox(ecs::HitboxAABB &aabb, const adobo::vec3f &ent_pos, const adobo::vec2f &ent_scale)
+    {
+        adobo::vec4f rect;
+        adobo::vec2f ent_topleft = {ent_pos.x - (0.5f * ent_scale.x), ent_pos.y - (0.5f * ent_scale.y)};
+
+        for (int i = 0; i < aabb.size; i++)
+        {
+            rect.x = ent_topleft.x + aabb.data[i].x * ent_scale.x;
+            rect.y = ent_topleft.y + aabb.data[i].y * ent_scale.y;
+            rect.z = aabb.data[i].z * ent_scale.x;
+            rect.w = aabb.data[i].w * ent_scale.y;
+            
+            draw_rect_buffer.emplace_back(rect);
+        }
+    }
+
+    void draw_end_hitbox()
+    {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        for (auto &e : draw_rect_buffer)
+        {
+            renderer::draw_shape_rect(e, u_projection);
+        }
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
+
     void proj_create_scene()
     {
         g_state.buffer_scene[31] = 0; 
@@ -178,6 +282,92 @@ namespace editor
      * GUIS                                 *
      *                                      *
      ****************************************/
+
+
+    bool component_input_int(const char* label, int *v, int min, int max, int step, int step_fast, ImGuiInputTextFlags flags)
+    {
+        if (ImGui::InputInt(label, v, step, step_fast, flags))
+        {
+            if (*v >= max)
+                *v = max - 1;
+            if (*v < min)
+                *v = min;
+            return true;
+        }
+        return false;
+    }
+    
+    // before using set, static f32 locked_aspect = 1.0
+    // returns interact flags: 1 (v.x), 2(v.y), 4(checkbox)
+    u8 component_uniform_dragf2(const char*name, f32 *v, u8 *state)
+    {
+        // state 1 = uniform_scaling, state 2 = aspect_locked
+        static f32 locked_aspect = 1.0;
+        std::string pid = (std::to_string(reinterpret_cast<uintptr_t>(state)));
+
+        ImGui::PushID(pid.c_str()); // unique scope
+        u8 flag = 0;
+
+        // WIDTH_CALCULATION
+        float totalWidth = ImGui::CalcItemWidth();
+        float checkboxWidth = ImGui::GetFrameHeight(); // square checkbox
+        float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
+        float itemWidth = (totalWidth - checkboxWidth - spacing * 2.0f) / 2.0f;
+
+        ImGui::PushItemWidth(itemWidth);
+        if (ImGui::DragFloat((std::string("##x") + pid).c_str(), &v[0], 0.0001f, -1.0f, 2.0f, "%f"))
+        {
+            flag |= 1;
+            if (ImGui::IsItemActive() && (*state & 1))
+            {
+                if (!(*state & 2))
+                {
+                    locked_aspect = v[0] / v[1];
+                    *state |= 2; // aspect_locked = true
+                }
+                v[1] = v[0] / locked_aspect;
+            }
+        }
+        ImGui::PopItemWidth();
+
+        ImGui::SameLine(0, spacing);
+
+        // Checkbox in the middle
+        bool uniform_scaling = *state & 1;
+        if (ImGui::Checkbox((std::string("##b") + pid).c_str(), &uniform_scaling))
+        {
+            flag |= 4;
+            *state ^= 1; // toggle uniform_scaling
+        }
+
+        ImGui::SameLine(0, spacing);
+
+        // Drag Y
+        ImGui::PushItemWidth(itemWidth);
+        if (ImGui::DragFloat(name, &v[1], 0.0001f, -1.0f, 2.0f, "%f"))
+        {
+            flag |= 2;
+            if (ImGui::IsItemActive() && uniform_scaling)
+            {
+                if (!(*state & 2))
+                {
+                    locked_aspect = v[0] / v[1];
+                    *state |= 2; // aspect_locked = true
+                }
+                v[0] = v[1] * (locked_aspect);
+            }
+        }
+        ImGui::PopItemWidth();
+        ImGui::PopID();
+
+        // When neither drag is active, release the lock
+        if (!ImGui::IsItemActive())
+        {
+            *state &= 1; // aspected_locked = false
+        }
+        return flag;
+    }
+     
 
     void gui_entity_list()
     {
@@ -228,22 +418,59 @@ namespace editor
         if (scene)
         {
             ImGui::Indent();
-            for (i32 i = 0; i < (i32)scene->m_entities.size(); i++)
-            {
-                bool is_selected = (g_state.sel_ent_index == (i32)i &&
+            for (i32 i = 0; i < (i32)scene->m_entities.size(); /* manual i++ inside */) {
+                // Unique ID per entity
+                std::string entlist_id = std::to_string(reinterpret_cast<uintptr_t>(&scene->m_entities[i]));
+
+                bool is_selected = (g_state.sel_ent_index == i &&
                                     g_state.active_scene_index == g_state.sel_ent_scene_index);
 
+                ImGui::PushID(i);
+
+                // Reserve space so the Selectable leaves room for the delete button
+                const float btn_w = ImGui::GetFrameHeight(); // square-ish
+                const ImGuiStyle& style = ImGui::GetStyle();
+                const float full_w = ImGui::GetContentRegionAvail().x;
+                const float selectable_w = full_w - (btn_w + style.ItemSpacing.x);
+
+                // Selectable
                 if (ImGui::Selectable(
-                        (
-                            std::string(scene->m_entities[i].m_name) +
-                            "##" +
-                            std::to_string(reinterpret_cast<uintptr_t>(&scene->m_entities[i])))
-                            .c_str(),
-                        is_selected))
+                        (std::string(scene->m_entities[i].m_name) + "##" + entlist_id).c_str(),
+                        is_selected,
+                        0,
+                        ImVec2(selectable_w, 0)))
                 {
                     g_state.sel_ent_index = i;
                     g_state.sel_ent_scene_index = g_state.active_scene_index;
+                    g_state.sel_hitbox_index = project.m_scenes[g_state.sel_ent_scene_index]
+                                                .m_entities[i].m_hitbox_index;
+                    g_state.sel_subhitbox_index = -1;
                 }
+
+                // Delete button, same line
+                ImGui::SameLine();
+                if (ImGui::Button(("X##" + entlist_id).c_str(), ImVec2(btn_w, 0))) {
+                    // Adjust selection if needed
+                    if (g_state.sel_ent_index == i &&
+                        g_state.active_scene_index == g_state.sel_ent_scene_index) {
+                        g_state.sel_ent_index = -1;
+                        g_state.sel_hitbox_index = -1;
+                        g_state.sel_subhitbox_index = -1;
+                    } else if (g_state.sel_ent_index > i &&
+                            g_state.active_scene_index == g_state.sel_ent_scene_index) {
+                        g_state.sel_ent_index--;
+                    }
+
+                    // Remove entity
+                    scene->remove_entity(i);
+                    
+
+                    ImGui::PopID();
+                    continue; // skip i++ since we erased
+                }
+
+                ImGui::PopID();
+                i++; // normal advance if not erased
             }
             ImGui::Unindent();
         }
@@ -260,11 +487,10 @@ namespace editor
         if (
             scene &&
             !scene->m_entities.empty() && 
-            is_valid_ent(*scene, g_state.sel_ent_index) && 
+            is_valid_ent(scene, g_state.sel_ent_index) && 
             g_state.active_scene_index == g_state.sel_ent_scene_index
         )
         {
-            static bool uniform_scaling = false;
             i32 &ent_index = g_state.sel_ent_index;
             i32 cur_ent_index = ent_index;
             auto &ent = scene->m_entities[ent_index];
@@ -330,62 +556,73 @@ namespace editor
             ImGui::Separator();
 
             {
-                static f64 locked_aspect = 1.0;
-                static bool aspect_locked = false;
 
                 ImGui::DragFloat3("Position", data.position, 0.0001f, -1.0f, 2.0f, "%f");
                 ImGui::DragFloat3("Rotation", data.rotation, 0.0001f, glm_rad(-180), glm_rad(180), "%f");
 
                 // Drag X
-                ImGui::PushID("pair"); // unique scope
+                static  u8 scale_state = 0;
+                component_uniform_dragf2("Scale##entinsscale", data.scale, &scale_state);
 
-                float totalWidth = ImGui::CalcItemWidth();
-                float checkboxWidth = ImGui::GetFrameHeight(); // square checkbox
-                float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
-                float itemWidth = (totalWidth - checkboxWidth - spacing * 2.0f) / 2.0f;
-                ImGui::PushItemWidth(itemWidth);
-                if (ImGui::DragFloat("##entxscale", &data.scale.x, 0.0001f, -1.0f, 2.0f, "%f"))
+                ImGui::Separator();
+                gui_section_hitbox_editor();
+                /* HITBOX EDITOR */
+                if (ImGui::Button("Create hitbox"))
                 {
-                    if (ImGui::IsItemActive() && uniform_scaling)
+                    proj_create_hitbox();
+                }
+                ImGui::SameLine();
+
+                if (ImGui::RadioButton("AABB", g_state.hitbox_type == ecs::HITBOX_TYPE_AABB))
+                    g_state.hitbox_type = ecs::HITBOX_TYPE_AABB;
+                ImGui::SameLine();
+                if (ImGui::RadioButton("Circle", g_state.hitbox_type == ecs::HITBOX_TYPE_CIRCLE))
+                    g_state.hitbox_type = ecs::HITBOX_TYPE_CIRCLE;
+
+                if (component_input_int("HitboxIndex", &ent.m_hitbox_index, -1, project.m_hitboxes.size()))
+                {
+                    if (ent.m_hitbox_index < 0)
                     {
-                        if (!aspect_locked)
-                        {
-                            locked_aspect = data.scale.x / data.scale.y;
-                            aspect_locked = true;
-                        }
-                        data.scale.y = data.scale.x / locked_aspect;
+                        data.hitbox.id = ecs::g_hitboxes.sparse.invalid_id();
+                        g_state.sel_hitbox_index = -1;
+                    }
+                    else
+                    {
+                        data.hitbox = project.m_hitboxes[ent.m_hitbox_index];
+                        g_state.sel_hitbox_index = ent.m_hitbox_index;
                     }
                 }
-                ImGui::PopItemWidth();
 
-                ImGui::SameLine(0, spacing);
-
-                // Checkbox in the middle
-                ImGui::Checkbox("##uniform", &uniform_scaling);
-
-                ImGui::SameLine(0, spacing);
-
-                // Drag Y
-                ImGui::PushItemWidth(itemWidth);
-                if (ImGui::DragFloat("Scale##entyscale", &data.scale.y, 0.0001f, -1.0f, 2.0f, "%f"))
+                if (g_state.sel_hitbox_index < (i32)project.m_hitboxes.size() && g_state.sel_hitbox_index >= 0)
                 {
-                    if (ImGui::IsItemActive() && uniform_scaling)
+                    i32 &hb_index = g_state.sel_hitbox_index;
+                    i32 &rect_index = g_state.sel_subhitbox_index;
+
+                    // AABB EDITOR
+                    if (
+                        project.m_hitboxes[hb_index].is_valid() && 
+                        project.m_hitboxes[hb_index].get_val<ecs::HitboxType>() & ecs::HITBOX_TYPE_AABB)
                     {
-                        if (!aspect_locked)
+                        auto& aabb = project.m_hitboxes[hb_index].get<ecs::HitboxAABB>();
+                        
+                        if (ImGui::Button("Create SubHitbox"))
                         {
-                            locked_aspect = data.scale.x / data.scale.y;
-                            aspect_locked = true;
+                            rect_index = aabb.size; 
+                            aabb.emplace_back(0.5f, 0.5f, 1.0f, 1.0f);
                         }
-                        data.scale.x = data.scale.y * locked_aspect;
+                        component_input_int("SubIndex", &rect_index, -1, aabb.size);
+                        if (aabb.size && rect_index >= 0 && rect_index < aabb.size)
+                        {
+                            static u8 hb_state = 0;
+                            ImGui::DragFloat2("Position##hb", &aabb.data[rect_index].x, 0.0001f, -1.0f, 2.0f, "%f");
+                            component_uniform_dragf2("Scale##hbscale", &aabb.data[rect_index].z, &hb_state);
+                        }
                     }
-                }
-                ImGui::PopItemWidth();
-                ImGui::PopID();
+                    else
+                    {
+                        ImGui::Text("No SubHitbox selected");
+                    }
 
-                // When neither drag is active, release the lock
-                if (!ImGui::IsItemActive())
-                {
-                    aspect_locked = false;
                 }
             }
         }
@@ -594,9 +831,23 @@ namespace editor
             subtex_index < (i32)project.m_assets.atlases[tex_index].subtex.size();
     }
 
-    bool is_valid_ent(adobo::AdoboScene &scene, i32 ent_index)
+    bool is_valid_ent(adobo::AdoboScene *scene, i32 ent_index)
     {
-        return ent_index >= 0 && ent_index < (i32)scene.m_entities.size();
+        if (scene)
+        {
+            return ent_index >= 0 && ent_index < (i32)scene->m_entities.size();
+        }
+        return false;
+    }
+
+    bool is_valid_ent(i32 ent_index)
+    {
+        adobo::AdoboScene *scene = nullptr;
+        if ((scene = proj_active_scene()))
+        {
+            return is_valid_ent(scene, ent_index);
+        }  
+        return false; 
     }
 
     adobo::AdoboScene *proj_active_scene()

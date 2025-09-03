@@ -4,6 +4,7 @@
 
 #include "types.h"
 #include "core/entity/ecs.h"
+#include "core/entity/hitbox.h"
 #include "binassets/binasset_stl_read.h"
 namespace adobo
 {
@@ -15,12 +16,13 @@ namespace adobo
 
     struct AdoboSceneEntity
     {
-        char          m_name[32];
         ecs::Entity2D m_id;
         i32           m_tex_index;
         i32           m_subtex_index;
+        i32           m_hitbox_index;
+        char          m_name[32];
 
-        AdoboSceneEntity(const char *name, ecs::Entity2D id, i32 tex_index, i32 subtex_index);
+        AdoboSceneEntity(const char *name, ecs::Entity2D id, i32 tex_index, i32 subtex_index, i32 hitbox_index);
     };
 
     struct AdoboScene
@@ -29,8 +31,9 @@ namespace adobo
         std::vector<AdoboSceneEntity> m_entities;
         
         AdoboScene(const char *name);
-        AdoboScene(binassets::AssetData &assets, const char *name, AdoboSceneEntityDataPOD *entities, size_t n_entities);
+        AdoboScene(binassets::AssetData &assets, std::vector<ecs::Hitbox> &hitboxes, const char *name, AdoboSceneEntityDataPOD *entities, size_t n_entities);
         void create_entity(binassets::AssetData &assets, const char *name, i32 tex_idx, i32 subtex_idx);
+        void remove_entity(i32 idx);
     };
 
     struct AdoboAssetInfo
@@ -45,6 +48,7 @@ namespace adobo
     {
         binassets::AssetData         m_assets;
         std::vector<AdoboScene>      m_scenes;
+        std::vector<ecs::Hitbox>     m_hitboxes;
         std::vector<AdoboAssetInfo>  m_atlas_info;
         std::vector<AdoboAssetInfo>  m_shader_info;
         char                         m_name[32];

@@ -25,14 +25,19 @@
 #include "imgui.h"
 #include "core/editor.h"
 
+#define ADOBO_GAME_EDITOR_MODE
+
 static void win_resize(int width, int height);
 static void mbtn_callback(int button, int action, int mods);
 static void key_input(int key, int scancode, int action, int mods);
 
 enum EntityType
 {
-    EntPlayer = 0
+    EntPlayer = 0,
+    DuckTarget,
 };
+
+static i32 s_duck_hits = 0;
 
 
 void update_player(const ecs::Entity2Dref &data)
@@ -56,21 +61,6 @@ void update_player(const ecs::Entity2Dref &data)
     }
 }
 
-void ecs::update()
-{
-    adobo::AdoboScene *s;
-    if ((s = editor::proj_active_scene()))
-    {
-        for (auto &e : s->m_entities)
-        {
-            if (e.m_id().type == EntPlayer)
-            {
-                update_player(e.m_id());
-            }
-        }
-    }
-}
-
 namespace game {
 
     void init(void) 
@@ -82,7 +72,10 @@ namespace game {
         plat::set_mousebtn_cb(mbtn_callback);
         plat::set_keyboard_cb(key_input);
         plat::set_framebuffer_cb(win_resize);
+        #ifdef ADOBO_GAME_EDITOR_MODE   
         editor::editor_init();
+        #else
+        #endif
 
         // glAlphaFunc(GL_GREATER, 0.5);
         // glEnable(GL_ALPHA_TEST);
@@ -96,8 +89,12 @@ namespace game {
     void update(double dTime)
     {
         (void) dTime;
+        #ifdef ADOBO_GAME_EDITOR_MODE
+        #ifdef ADOBO_GAME_EDITOR_MODE   
         ecs::update();
-
+        #else
+        #endif
+        #endif
     }
     
     void render(void)
@@ -105,7 +102,12 @@ namespace game {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
         glDepthMask(GL_FALSE);
         
+        #ifdef ADOBO_GAME_EDITOR_MODE   
         editor::editor_render();
+        #else
+        
+        #endif
+
         glDepthMask(GL_TRUE);
     }
 
@@ -144,10 +146,15 @@ namespace game {
             ImGui::Text("ECS s,c: %zu %zu", ecs::g_entities.size, ecs::g_entities.capacity);
             ImGui::Text("S2D s,c: %zu %zu", renderer::g_sprites.size, renderer::g_sprites.capacity);
             ImGui::Text("TEX s,c: %zu %zu", texture::g_textures.size, texture::g_textures.capacity);
+            ImGui::Text("Hits: %d", s_duck_hits);
         }
         ImGui::End();
 
+        #ifdef ADOBO_GAME_EDITOR_MODE   
         editor::editor_gui();
+        #else
+
+        #endif
     }
 
 }
@@ -157,12 +164,30 @@ void win_resize(int width, int height)
 
 }
 
+void ecs::update()
+{
+}
+
 void mbtn_callback(int button, int action, int mods)
 {
     (void)mods;
+    const adobo::vec2f mposf = {(f32)plat::g_window.mpos.x, (f32)plat::g_window.mpos.y}; 
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
     {
-        // DEBUG_LOG("L_CLICK\n");
+        adobo::AdoboScene *s;
+        if ((s = editor::proj_active_scene()))
+        {
+            for (auto &e : s->m_entities)
+            {
+                if (e.m_id.get_val<ecs::Tag_Type>() == DuckTarget)
+                {
+                    if (ecs::hb_is_hit(e.m_id, mposf))
+                    {
+                        DEBUG_ERR("HIT %d\n", ++s_duck_hits);
+                    }
+                }
+            }
+        }
     }
 }
 

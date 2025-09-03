@@ -1,9 +1,9 @@
 #pragma once
 #include "util/debug.h"
 #include <cstdlib>
-#include <limits>
+#include <cstdint>
+#include <type_traits>
 
-#define INVALID_ID std::numeric_limits<T>::max();
 namespace ggb
 {
     template<typename T>
@@ -31,15 +31,29 @@ namespace ggb
         SparseID        create_id(void);
         SparseID        create_id(DenseKey &index_out);
         DenseKey        remove(SparseID id);
+        bool            is_valid(T id) const;
+        constexpr T     invalid_id() const;
+
         DenseKey&       operator[](SparseID id);
-        const DenseKey& operator[](SparseID id) const;
-        constexpr T invalid_id() const;
+        const DenseKey  operator[](SparseID id) const;
+        
     };
 
     template <typename T>
     inline constexpr T Sparse<T>::invalid_id() const
     {
-        return std::numeric_limits<T>::max();
+        static_assert(std::is_integral_v<T>, "Integral type required");
+        return static_cast<T>(~static_cast<T>(0));
+    }
+
+    template <typename T>
+    bool Sparse<T>::is_valid(T id) const
+    {
+        if (size <= 0 || this->invalid_id() == id || id >= (T)(size + free_size))
+        {
+            return false;
+        }
+        return true;
     }
 
     template <typename T>
@@ -104,21 +118,22 @@ namespace ggb
     inline typename Sparse<T>::DenseKey &Sparse<T>::operator[](SparseID id)
     {
 #ifdef DEBUG_ENABLED
-        if (id >= (T)capacity || id == this->invalid_id())
+        if (!(this->is_valid(id)))
         {
-            DEBUG_LOG("invalid id");
+            DEBUG_ERR("Sparse: invalid id\n");
         }
 #endif
         return id_to_index[id];
     }
 
     template <typename T>
-    inline const typename Sparse<T>::DenseKey &Sparse<T>::operator[](SparseID id) const
+    inline const typename Sparse<T>::DenseKey Sparse<T>::operator[](SparseID id) const
     {
 #ifdef DEBUG_ENABLED
-        if (id >= (T)capacity || id == this->invalid_id())
+        if (!(this->is_valid(id)))
         {
             DEBUG_LOG("Sparse: invalid id\n");
+            return 0;
         }
 #endif
         return id_to_index[id];
@@ -130,7 +145,7 @@ namespace ggb
         if (size >= capacity)
         {
             if (reserve(capacity << 1))
-                return INVALID_ID;
+                return this->invalid_id();
         }
 
         DenseKey index = size++;
@@ -153,7 +168,7 @@ namespace ggb
     {
         if (size >= capacity)
         {
-            if (reserve(capacity << 1)) return INVALID_ID;
+            if (reserve(capacity << 1)) return this->invalid_id();;
         }
 
         DenseKey index = size++;
@@ -173,12 +188,15 @@ namespace ggb
     template <typename T>
     inline typename Sparse<T>::DenseKey Sparse<T>::remove(SparseID id)
     {
-        if (size <= 0 || id >= (T)capacity || id == this->invalid_id())
+        if (!this->is_valid(id))
             return this->invalid_id();
 
         DenseKey index = id_to_index[id];
         DenseKey last_index = --size;
 
+        id_to_index[id] = this->invalid_id();
+        free_id[free_size++] = id;        
+        
         id_to_index[index_to_id[last_index]] = index;
         return index;
     }

@@ -1,108 +1,52 @@
-//todo ecs and texture should support manual uvs and not just a uv_index
-//todo binary asset compiler must output a enum for accessing the assets
+--------------------------------------------------------------------------------------------------
+FINISHED TODOS
+--------------------------------------------------------------------------------------------------
+// TODO ecs and texture should support manual uvs and not just a uv_index
+// TODO binary asset compiler must output a enum for accessing the assets
+// TODO add suport for ggb::AssetAtlas texture
+// TODO change sprite.vert to support texture uvs
+// TODO add ecs set uv_index or something that will calculate the texture uv on the fly 
+// TODO IMPLEMENT ALL OF THE SHIT AS DYNAMICALLY ALLOCATED SHIT
+//          SPRITE2DSOA
+//          TextureSoa now TextureManager
+// TODO  make default coord system from 0 - SCREEN_WIDTH/HEIGHT to 0.0f - 1.0f
+// TODO reimplement all static gloval variables.
+// TODO FINISH ADOBOPROJ WRITER
+// FIX  reloading
+//      SOL DELETE TEXTURE GL
+//      SOL CLEAR HASHMAP FOR FILES
+// FIX  when 2 sprites gets loaded and saved and loaded its not getting loaded properly
+// TODO uniform scaling
+// TODO save adoboproj / save as adoboproj
+// TODO IMPEMENT DEBUG HITBOX AND HITBOX RELATIVE TO SPRIUTES
+// TODO add tooling that aids making scenes or like placing out the objects
+// TODO implement editor gui, json loader for loading assets and scene creator
+// TODO saving and loading scenes.
+// TODO make a file format for scenes
+// TODO editor gui.
+// TODO BINASSET MAKE OUTPUT OF WRITER NORMAL TEX UV FOR ATLAS SUBTEX
+// TODO file format adobo, adoboproj optimized with assets
+ 
+--------------------------------------------------------------------------------------------------
+CURRENT TODOS
+--------------------------------------------------------------------------------------------------
 
-//TODO add suport for ggb::AssetAtlas texture
-//TODO change sprite.vert to support texture uvs
-//TODO add ecs set uv_index or something that will calculate the texture uv on the fly 
-// IMPLEMENT ALL OF THE SHIT AS DYNAMICALLY ALLOCATED SHIT
-// SPRITE2DSOA
-// TextureSoa now TextureManager
-//todo make default coord system from 0 - SCREEN_WIDTH/HEIGHT to 0.0f - 1.0f
-//reimplement all static gloval variables.
+// BUGS
+TODO IMPLEMENT MAX_CAP OF renderer::Sprite2DSoa::SSBO (OpenGL SSBO is not resizable)
 
+// optimizations
+TODO utilize compute shaders to our advantage
+TODO make a mem system
+TODO remove direct img support and loaded img are treated as atlases with 1 uv
 
-todo utilize compute shaders to our advantage
-TODO add tooling that aids making scenes or like placing out the objects
+// dev ux
+TODO ent_types can have names
+TODO scene name rename
+TODO project name rename
+TODO texture/atlas deletes
+TODO texture/atlas with small preview image
+TODO better gui 
 
-
-make a mem system
-implement editor gui, json loader for loading assets and scene creator
-might think of a runtime game loader instead of a raw code to help game dev to be faster
-loads data like entities, type of entities, position, scale
-and code is just the behavior of such entities
-
-!!!!!!!
-IMPORTANT!!!!
-Atlases (xml) should and can be loaded at runtime without prior binary processing and
-in the editor we compile this to binary or in a saved game scenes for later editing
-MULTI ASSETS (images, shaders, atlases, xml) and runtime loading of new assets
-
-but only one bin;
-bins can be edited and processed again but we should make this the last thing to implement;
-in order to allow to process this again we need metadata like a json file to know the names of this files
-
-WITH EDITOR IN HAND we should have:
-scene file format where names and types of the entities can be placed
-this will later be processed to become a binary compiled asset other than glnsh binasset
-glnsh binasset only should contains the assets files and never game stuff like position types etc
-binasset should then store names as this is a intermidiary file type but more thoughts on that soon
-
-saving and loading scenes.
-make a file format for scenes
-editor gui.
-
-FOR now we do editor then later 
-we implement runtime loading of assets in the editor and
-compile runtime assets to binasset or some intermidiary file for later processing
-
-BINASSET MAKE OUTPUT OF WRITER NORMAL TEX UV FOR ATLAS SUBTEX
-
-
-what i think my plans are rn:
-implement direct/runtime asset loading editor
-implement editor game scene file .adoboproj
-    .adoboproj will have:
-        files of asset files (images, xml, shaders)
-        names of the textures (like the json output of bsst)
-        scenes
-    
-    all assets will be loaded in runtime
-    the game dev can choose to export it to the final .adobo file
-    where its optimized for the game engine
-
-
-implement compiling to a game scene file, we call .adobo
-    adobo file will have: 
-        glnsh file embeded
-        scenes (multiple)
-            entities
-            entity data
-
-IMPLEMENT
-    remove img support
-    loaded img are treated as atlases with 1 uv
-
-in the future we can also have a full with source editor, like a project file
-
-
-letche mango flan 130
-isda              100
-oil               35
-fried             157
-
-uniform           1000
-uniform patahi    800
-shoes             2000
-shoes             2000
-tupi              150
-
-TODO FINISH ADOBOPROJ WRITER
-
-TODO 
-fix reloading
-    DELETE TEXTURE GL
-    CLEAR HASHMAP FOR FILES
-
-types TYPES NAMED
-
-when 2 sprites gets loaded and saved and loaded its not getting loaded properly
-uniform scaling
-scene name rename
-project name rename
-better gui
-save adoboproj / save as adoboproj
-
-
-TODO IMPLEMENT MAX_CAP OF SSBO (ITS NOT DYNAMIC)
-
-file format adobo, adoboproj optimized with assets
+// priorities
+TODO IMPLEMENT/CONVERT AdoboProj from using stl to raw (big_change)
+TODO FOR IMPLEMENTING HitboxCircle & HitboxAABB, separate them out in the AdoboProj (minor_change);

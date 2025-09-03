@@ -20,20 +20,20 @@ namespace shader
     void bind(u32 shader_id);
     void unbind(void);
 
-    void set_uniform_mat4(const Shader &shader, const char *name, mat4 value);
-    void set_uniform_vec4(const Shader &shader, const char *name, vec4 value);
-    void set_uniform_vec3(const Shader &shader, const char *name, vec3 value);
-    void set_uniform_vec2(const Shader &shader, const char *name, vec2 value);
-    void set_uniform_f32(const Shader &shader, const char *name, f32 value);
-    void set_uniform_i32(const Shader &shader, const char *name, i32 value);
+    void set_uniform_mat4(const Shader &shader, const char *name, const mat4 value);
+    void set_uniform_vec4(const Shader &shader, const char *name, const vec4 value);
+    void set_uniform_vec3(const Shader &shader, const char *name, const vec3 value);
+    void set_uniform_vec2(const Shader &shader, const char *name, const vec2 value);
+    void set_uniform_f32(const Shader &shader, const char *name, const f32 value);
+    void set_uniform_i32(const Shader &shader, const char *name, const i32 value);
     
     // shader id
-    void set_uniform_mat4(const u32 shader_id, const char *name, mat4 value);
-    void set_uniform_vec4(const u32 shader_id, const char *name, vec4 value);
-    void set_uniform_vec3(const u32 shader_id, const char *name, vec3 value);
-    void set_uniform_vec2(const u32 shader_id, const char *name, vec2 value);
-    void set_uniform_f32(const u32 shader_id, const char *name, f32 value);
-    void set_uniform_i32(const u32 shader_id, const char *name, i32 value);
+    void set_uniform_mat4(const u32 shader_id, const char *name, const mat4 value);
+    void set_uniform_vec4(const u32 shader_id, const char *name, const vec4 value);
+    void set_uniform_vec3(const u32 shader_id, const char *name, const vec3 value);
+    void set_uniform_vec2(const u32 shader_id, const char *name, const vec2 value);
+    void set_uniform_f32(const u32 shader_id, const char *name, const f32 value);
+    void set_uniform_i32(const u32 shader_id, const char *name, const i32 value);
 
     
 }

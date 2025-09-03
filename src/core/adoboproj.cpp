@@ -1,6 +1,7 @@
 #include "types.h"
 #include "binassets/binasset_stl_read.h"
 #include "core/entity/ecs.h"
+#include "core/entity/hitbox.h"
 #include "util/debug.h"
 
 #include <cstring>
@@ -19,6 +20,8 @@ namespace adobo
         i32 n_atlas;
         i32 n_shader;
         i32 n_scenes;
+        i32 n_hitbox_aabb;
+        i32 n_hitbox_circle;
         i32 n_entities;
         i32 n_total_path_size;
     };
@@ -31,6 +34,7 @@ namespace adobo
         adobo::vec3f rotation;
         i32 tex_index;
         i32 subtex_index;
+        i32 hitbox_index;
         i32 type;
     };
 
@@ -42,6 +46,7 @@ namespace adobo
         adobo::vec3f rotation;
         i32          tex_index;
         i32          subtex_index;
+        i32          hitbox_index;
         i32          type;
 
         AdoboSceneEntityData(
@@ -51,10 +56,15 @@ namespace adobo
             const adobo::vec3f &_rotation,
             const i32 _tex_index,
             const i32 _subtex_index,
+            const i32 _hitbox_index,
             const i32 _type
         )
-            : position(_position), scale(_scale), rotation(_rotation),
-              tex_index(_tex_index), subtex_index(_subtex_index),
+            : position(_position), 
+              scale(_scale), 
+              rotation(_rotation),
+              tex_index(_tex_index), 
+              subtex_index(_subtex_index), 
+              hitbox_index(_hitbox_index), 
               type(_type) 
         {
             std::strncpy(name, _name, sizeof(name));
@@ -71,6 +81,7 @@ namespace adobo
 
     AdoboScene::AdoboScene(
         bsst::AssetData &assets, 
+        std::vector<ecs::Hitbox> &hitboxes,
         const char *name, 
         AdoboSceneEntityDataPOD *entities, 
         size_t n_entities
@@ -82,37 +93,48 @@ namespace adobo
         m_entities.reserve(n_entities);
         for (size_t i = 0; i < n_entities; i++)
         {
+            
             auto &e = entities[i];
             ecs::Entity2D ent_id;
             auto ent_data     = ecs::create(ent_id);
+            if (e.hitbox_index >= 0 && hitboxes.size())
+            { 
+                ent_data.hitbox   = hitboxes[e.hitbox_index];  
+            }
             ent_data.position = e.position;
             ent_data.scale    = e.scale;
             ent_data.rotation = e.rotation;
             ent_data.tex      = assets.atlases[e.tex_index].tex;
             ent_data.tex_uv   = assets.atlases[e.tex_index].tex[e.subtex_index];
             ent_data.type     = e.type;
-            m_entities.emplace_back(e.name, ent_id, e.tex_index, e.subtex_index);
+            m_entities.emplace_back(e.name, ent_id, e.tex_index, e.subtex_index, e.hitbox_index);
         }
     }
     void AdoboScene::create_entity(binassets::AssetData &assets, const char *name, i32 tex_idx, i32 subtex_idx)
     {
         ecs::Entity2D ent;
         auto data = ecs::create(ent);
-        data.aabb = nullptr;
         data.position = {0.5f, 0.5f, 0.0f};
         data.scale = {0.2f, 0.2f};
         data.rotation = {};
         data.tex = assets.atlases[tex_idx].tex;
         data.tex_uv = assets.atlases[tex_idx].tex[subtex_idx];
+        data.hitbox.id = ecs::g_hitboxes.sparse.invalid_id();
         data.type = 0;
 
-        m_entities.emplace_back(name, ent, tex_idx, subtex_idx);
+        m_entities.emplace_back(name, ent, tex_idx, subtex_idx, -1);
 
         DEBUG_LOG("Editor: Created entity %s\n", name);
     }
 
-    AdoboSceneEntity::AdoboSceneEntity(const char *name, ecs::Entity2D id, i32 tex_index, i32 subtex_index)
-        : m_id(id), m_tex_index(tex_index), m_subtex_index(subtex_index)
+    void AdoboScene::remove_entity(i32 idx)
+    {
+        ecs::remove_entity(m_entities[idx].m_id);
+        m_entities.erase(m_entities.begin() + idx);
+    }
+
+    AdoboSceneEntity::AdoboSceneEntity(const char *name, ecs::Entity2D id, i32 tex_index, i32 subtex_index, i32 hitbox_index)
+        : m_id(id), m_tex_index(tex_index), m_subtex_index(subtex_index), m_hitbox_index(hitbox_index)
     {
         std::strncpy(m_name, name, sizeof(m_name));
         m_name[sizeof(m_name) - 1] = '\0';
@@ -246,24 +268,64 @@ namespace adobo
         i32  *num_scene_ent      = nullptr;
         i32  *atlas_path_size    = nullptr;
         i32  *shader_path_size   = nullptr;
+        i32  *n_subhb_aabb       = nullptr;
+        i32  *n_subhb_circle     = nullptr;
         char *project_name       = nullptr;
         char *buffer_scene_names = nullptr;
         AdoboSceneEntityDataPOD *buffer_ents = nullptr;
+        adobo::vec4f *buffer_hitbox_aabb   = nullptr;
+        adobo::vec3f *buffer_hitbox_circle = nullptr;
         
         char *buffer_atlas_name  = nullptr;
         char *buffer_shader_name = nullptr;
         char *buffer_atlas_path  = nullptr;
         char *buffer_shader_path = nullptr;
-
+        
         counts =            (ProjMetadata *)mem;
         num_scene_ent =     (i32 *) (mem + (boffset += sizeof(ProjMetadata)));
         atlas_path_size =   (i32 *) (mem + (boffset += sizeof(i32) * counts->n_scenes));
         shader_path_size =  (i32 *) (mem + (boffset += sizeof(i32) * counts->n_atlas));
-        project_name =      (char *)  (mem + (boffset += sizeof(i32) * counts->n_shader));
+        n_subhb_aabb     =  (i32 *) (mem + (boffset += sizeof(i32) * counts->n_shader));
+        n_subhb_circle   =  (i32 *) (mem + (boffset += sizeof(i32) * counts->n_hitbox_aabb));
+        project_name =      (char *)  (mem + (boffset += sizeof(i32) * counts->n_hitbox_circle));
         
         buffer_scene_names = (char *) (mem + (boffset += 32));
         buffer_ents        = (AdoboSceneEntityDataPOD *) (mem + (boffset += counts->n_scenes * 32));
-        buffer_atlas_name  = (char *) (mem + (boffset += counts->n_entities * sizeof(AdoboSceneEntityDataPOD)));
+        buffer_hitbox_aabb = (adobo::vec4f *) (mem + (boffset += counts->n_entities * sizeof(AdoboSceneEntityDataPOD)));
+        
+        // hitbox aabb
+        size_t hb_offset = 0;
+        for (int i = 0; i < counts->n_hitbox_aabb; i++)
+        {
+            size_t dsize = sizeof(adobo::vec4f) * n_subhb_aabb[i]; 
+            
+            ecs::Hitbox hb;
+            auto &a = ecs::create_hitbox<ecs::HITBOX_TYPE_AABB>(hb);
+            a.init(n_subhb_aabb[i]);
+            a.size = n_subhb_aabb[i];
+            memcpy(a.data, buffer_hitbox_aabb + hb_offset, dsize);
+            hb_offset += dsize;
+            proj.m_hitboxes.push_back(hb);
+        }
+        
+        // hitbox circle
+        buffer_hitbox_circle = (adobo::vec3f *) (mem + (boffset += hb_offset));
+        hb_offset = 0;
+        for (int i = 0; i < counts->n_hitbox_circle; i++)
+        {
+            size_t dsize = n_subhb_circle[i] * sizeof(adobo::vec3f);
+
+            ecs::Hitbox hb;
+            auto &a = ecs::create_hitbox<ecs::HITBOX_TYPE_CIRCLE>(hb);
+            a.init(n_subhb_circle[i]);
+            a.size = n_subhb_circle[i];
+            memcpy(a.data, buffer_hitbox_circle + hb_offset, dsize);
+            hb_offset += dsize;
+
+            proj.m_hitboxes.push_back(hb);
+        }
+
+        buffer_atlas_name  = (char *) (mem + (boffset += hb_offset));
         buffer_shader_name = (char *) (mem + (boffset += counts->n_atlas * 32));
         buffer_atlas_path  = (char *) (mem + (boffset += counts->n_shader * 32));
 
@@ -279,7 +341,7 @@ namespace adobo
         
         buffer_shader_path = buffer_atlas_path + path_offset; 
         path_offset = 0;
-
+        
         for (i32 i = 0; i < counts->n_shader; i++)
         {
             proj.load_shader(buffer_shader_path + path_offset, buffer_shader_name + (i * 32));
@@ -289,11 +351,13 @@ namespace adobo
         for (i32 i = 0; i < counts->n_scenes; i++)
         {
             proj.m_scenes.emplace_back(
-                proj.m_assets, 
+                proj.m_assets, proj.m_hitboxes,
                 buffer_scene_names + (i * 32), 
                 buffer_ents, num_scene_ent[i]
             ); 
         }
+
+        
 
         fclose(file);
         free(mem);
@@ -320,6 +384,8 @@ namespace adobo
             (i32) proj.m_assets.shaders.size(), 
             (i32) proj.m_scenes.size(),
             0,
+            0,
+            0,
             0
         };
 
@@ -337,13 +403,28 @@ namespace adobo
             counts.n_entities += s.m_entities.size();
         }
 
+        for (auto &s : proj.m_hitboxes)
+        {
+            if (s.get_val<ecs::HitboxType>() & ecs::HITBOX_TYPE_AABB)
+            {
+                counts.n_hitbox_aabb++;
+            }
+            else 
+            {
+                counts.n_hitbox_circle++;
+            }
+        }
+
+
         size_t file_size = 
-            sizeof(i32) * (counts.n_atlas + counts.n_shader + counts.n_scenes) + // n_entities + atlas and shader path sizes
+            sizeof(i32) * (counts.n_atlas + counts.n_shader + counts.n_scenes + counts.n_hitbox_aabb + counts.n_hitbox_circle) + // n_entities + atlas and shader path sizes
             32 + // project name
             counts.n_total_path_size + // atlas shader path
             32 * (counts.n_atlas + counts.n_shader) + // atlas shader name
             counts.n_scenes * 32 + // scene names
-            counts.n_entities * sizeof(AdoboSceneEntityData)
+            counts.n_entities * sizeof(AdoboSceneEntityDataPOD) +
+            counts.n_hitbox_aabb   * sizeof(adobo::vec4f) +
+            counts.n_hitbox_circle * sizeof(adobo::vec3f)
         ;
         
         // size_t mem_offset = 0;
@@ -371,6 +452,28 @@ namespace adobo
             mem += sizeof(i32);
         }
 
+        // hbaabb
+        for (auto &s : proj.m_hitboxes)
+        {
+            if (s.get_val<ecs::HitboxType>() & ecs::HITBOX_TYPE_AABB)
+            {
+                int val = (i32)s.get<ecs::HitboxAABB>().size;
+                memcpy(mem, &val, sizeof(i32));
+                mem += sizeof(i32);
+            }
+        }
+
+        // hbcircle
+        for (auto &s : proj.m_hitboxes)
+        {
+            if (s.get_val<ecs::HitboxType>() & ecs::HITBOX_TYPE_CIRCLE)
+            {
+                int val = (i32)s.get<ecs::HitboxCircle>().size;
+                memcpy(mem, &val, sizeof(i32));
+                mem += sizeof(i32);
+            }
+        }
+
         memcpy(mem, proj.m_name, 32);
         mem += 32;
 
@@ -394,10 +497,33 @@ namespace adobo
                 ent.rotation = data.rotation;
                 ent.tex_index    = e.m_tex_index;
                 ent.subtex_index = e.m_subtex_index;
+                ent.hitbox_index = e.m_hitbox_index;
                 ent.type = data.type;
                 
                 memcpy(mem, &ent, sizeof(AdoboSceneEntityDataPOD));
                 mem += sizeof(AdoboSceneEntityDataPOD);
+            }
+        }
+
+        // hbaabb
+        for (auto &s : proj.m_hitboxes)
+        {
+            if (s.get_val<ecs::HitboxType>() & ecs::HITBOX_TYPE_AABB)
+            {
+                size_t dsize = sizeof(adobo::vec4f) * s.get<ecs::HitboxAABB>().size; 
+                memcpy(mem, s.get<ecs::HitboxAABB>().data, dsize);
+                mem += dsize;
+            }
+        }
+
+        // hbcircle
+        for (auto &s : proj.m_hitboxes)
+        {
+            if (s.get_val<ecs::HitboxType>() & ecs::HITBOX_TYPE_CIRCLE)
+            {
+                size_t dsize = sizeof(adobo::vec3f) * s.get<ecs::HitboxCircle>().size; 
+                memcpy(mem, s.get<ecs::HitboxCircle>().data, dsize);
+                mem += dsize;
             }
         }
 

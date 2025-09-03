@@ -3,10 +3,19 @@
 #include "types.h"
 #include "renderer/texture.h"
 #include "core/constants.h"
-
+#include "core/entity/hitbox.h"
 
 namespace ecs 
 {
+    struct Tag_Hitbox {};
+    struct Tag_Position {};
+    struct Tag_Scale {};
+    struct Tag_Rotation {};
+    struct Tag_Texture {};
+    struct Tag_TexUV {};
+    struct Tag_Type {};
+    struct Tag_Index {};
+
     /* CONSTANTS */
     const i32 INVALID_ENTITY_ID = -1;
     
@@ -31,6 +40,11 @@ namespace ecs
     void         remove_entity(Entity2D &entity);
     adobo::vec4f get_aabb(Entity2D &ent);
 
+    bool hb_is_hit(Entity2D ent, const adobo::vec2f &point);
+    bool hb_is_hit(Entity2D ent, const adobo::vec2f &point, f32 radius);
+    bool hb_is_point_inside(const ecs::HitboxAABB &aabb, const adobo::vec3f &ent_pos, const adobo::vec2f &ent_scale, const adobo::vec2f &point);
+    bool hb_is_circle_overlapping(const ecs::HitboxAABB &aabb, const adobo::vec3f &ent_pos, const adobo::vec2f &ent_scale, const adobo::vec2f &point, f32 radius);
+
     template<i32 N>
     Entity2Dref create(Entity2DGroup<N> &ents, const texture::Texture &tex, const adobo::vec4f &tex_uv, const f32 pos_x, const f32 pos_y, const f32 scale_x, const f32 scale_y);
     Entity2Dref create(Entity2D &entity_out, const texture::Texture &tex, const adobo::vec4f &tex_uv, const f32 pos_x, const f32 pos_y, const f32 scale_x, const f32 scale_y);
@@ -38,7 +52,7 @@ namespace ecs
 
     /* TYPE DEFS */
     struct Entity2Dref {
-        Multaabb         *&aabb;
+        Hitbox            &hitbox;
         adobo::vec3f      &position;
         adobo::vec2f      &scale;
         adobo::vec3f      &rotation;
@@ -54,18 +68,25 @@ namespace ecs
         i32 id;
 
         inline Entity2Dref operator()(void);
-    };
+        
+        template <typename Tag>
+        auto& get(i32 index);
+        
+        template <typename Tag>
+        auto& get();
 
-    struct Multaabb 
-    {
-        adobo::vec4f *aabb;
-        size_t size;
+        template <typename Tag>
+        auto get_val() const;
+
+        template <typename Tag>
+        auto get_val(i32 index) const;
     };
+    
 
     struct Entity2DManager 
     {
         char             *_bp;
-        Multaabb        **aabb;
+        Hitbox           *hitbox;
         adobo::vec3f     *position;
         adobo::vec2f     *scale;
         adobo::vec3f     *rotation;
@@ -85,8 +106,19 @@ namespace ecs
         inline Entity2Dref operator[](size_t index);
         inline Entity2Dref operator()(Entity2DID id);
         inline Entity2Dref operator()(Entity2D &entity);
-    };
+        inline i32 to_index(Entity2D &entity);
+        inline i32 to_index(Entity2DID id);
 
+        
+        template <typename Tag>
+        auto& get(i32);
+        
+        template <typename Tag>
+        auto get_val(Entity2D) const;
+
+        template <typename Tag>
+        auto get_val(i32) const;
+    };
 
     template <i32 N>
     struct Entity2DGroup
@@ -99,17 +131,10 @@ namespace ecs
 
     /* METHODS AND OPERATORS */
 
-    /* Entity2D */
-    inline Entity2Dref Entity2D::operator()(void)
-    {
-        return g_entities(Entity2D::id);
-    }
-
-
     /* Entity2Dref */
     inline Entity2Dref &Entity2Dref::operator=(const Entity2Dref &other)
     {
-        aabb     = other.aabb;
+        hitbox   = other.hitbox;
         position = other.position;
         scale    = other.scale;
         rotation = other.rotation;
@@ -127,8 +152,9 @@ namespace ecs
         if (n > 0)
         {
             char *mem = nullptr;
-            mem = (char *)std::malloc(
-                sizeof(*aabb)     * n +
+            mem = (char *)std::calloc(
+                1,
+                sizeof(*hitbox)   * n +
                 sizeof(*position) * n +
                 sizeof(*scale)    * n + 
                 sizeof(*rotation) * n + 
@@ -144,8 +170,8 @@ namespace ecs
 
             size_t offset = 0;
             _bp      = mem;
-            aabb     = (Multaabb **)        (mem);
-            position = (adobo::vec3f *)     (mem + (offset += n * sizeof(*aabb)));
+            hitbox   = (Hitbox *)           (mem);
+            position = (adobo::vec3f *)     (mem + (offset += n * sizeof(*hitbox)));
             scale    = (adobo::vec2f *)     (mem + (offset += n * sizeof(*position)));
             rotation = (adobo::vec3f *)     (mem + (offset += n * sizeof(*scale)));
             textures = (texture::Texture *) (mem + (offset += n * sizeof(*rotation)));
@@ -169,7 +195,7 @@ namespace ecs
 
         char *mem = (char *)std::realloc(
             _bp,
-            sizeof(*aabb)     * new_cap +
+            sizeof(*hitbox)   * new_cap +
             sizeof(*position) * new_cap +
             sizeof(*scale)    * new_cap +
             sizeof(*rotation) * new_cap +
@@ -183,7 +209,7 @@ namespace ecs
             return 1;
         }
         size_t boffset = 
-            sizeof(*aabb)     * capacity +
+            sizeof(*hitbox)   * capacity +
             sizeof(*position) * capacity +
             sizeof(*scale)    * capacity +
             sizeof(*rotation) * capacity +
@@ -192,8 +218,8 @@ namespace ecs
 
         size_t offset = 0;
         _bp = mem;
-        aabb        = (Multaabb **)        (mem); 
-        position    = (adobo::vec3f *)     (mem + (offset += sizeof(*aabb)     * new_cap)); 
+        hitbox      = (Hitbox *)           (mem); 
+        position    = (adobo::vec3f *)     (mem + (offset += sizeof(*hitbox)     * new_cap)); 
         scale       = (adobo::vec2f *)     (mem + (offset += sizeof(*position) * new_cap));
         rotation    = (adobo::vec3f *)     (mem + (offset += sizeof(*scale)    * new_cap));
         textures    = (texture::Texture *) (mem + (offset += sizeof(*rotation) * new_cap));
@@ -227,7 +253,7 @@ namespace ecs
     inline Entity2Dref Entity2DManager::operator[](size_t index)
     {
         return Entity2Dref{
-            aabb[index],
+            hitbox[index],
             position[index],
             scale[index],
             rotation[index],
@@ -246,6 +272,115 @@ namespace ecs
     {
         return (*this)[sparse[entity.id]];
     }
+
+        inline i32 Entity2DManager::to_index(Entity2D &entity)
+    {
+        return sparse[entity.id];
+    }
+    inline i32 Entity2DManager::to_index(Entity2DID id)
+    {
+        return sparse[id];
+    }
+
+    template <>
+    inline auto Entity2DManager::get_val<Entity2D>(Entity2D ent) const { return sparse[ent.id]; }
+
+    template <>
+    inline auto Entity2DManager::get_val<Entity2D>(Entity2DID id) const { return sparse[id]; }
+
+    template <>
+    inline auto Entity2DManager::get_val<Tag_Hitbox>(i32 index) const { return hitbox[index]; }
+
+    template <>
+    inline auto Entity2DManager::get_val<Tag_Type>(i32 index) const { return type[index]; }
+    
+    template <>
+    inline auto& Entity2DManager::get<Tag_Hitbox>(i32 index) { return hitbox[index]; }
+
+    template <>
+    inline auto& Entity2DManager::get<Tag_Position>(i32 index) { return position[index]; }
+
+    template <>
+    inline auto& Entity2DManager::get<Tag_Scale>(i32 index) { return scale[index]; }
+
+    template <>
+    inline auto& Entity2DManager::get<Tag_Rotation>(i32 index) { return rotation[index]; }
+
+    template <>
+    inline auto& Entity2DManager::get<Tag_Texture>(i32 index) { return textures[index]; }
+
+    template <>
+    inline auto& Entity2DManager::get<Tag_TexUV>(i32 index) { return tex_uv[index]; }
+
+    template <>
+    inline auto& Entity2DManager::get<Tag_Type>(i32 index) { return type[index]; }
+
+    /* Entity2D */
+    inline Entity2Dref Entity2D::operator()(void)
+    {
+        return g_entities(Entity2D::id);
+    }
+    
+    /* using DenseIndex */
+    /* index entity2d get() */
+    template <>
+    inline auto Entity2D::get_val<Entity2D>() const { return g_entities.get_val<Entity2D>(*(this)); }
+
+    template <>
+    inline auto Entity2D::get_val<Tag_Hitbox>(i32 index) const { return g_entities.get_val<Tag_Hitbox>(index); }
+
+    template <>
+    inline auto Entity2D::get_val<Tag_Type>(i32 index) const { return g_entities.get_val<Tag_Type>(index); }
+
+    template <>
+    inline auto& Entity2D::get<Tag_Position>(i32 index) { return g_entities.get<Tag_Position>(index); }
+
+    template <>
+    inline auto& Entity2D::get<Tag_Scale>(i32 index) { return g_entities.get<Tag_Scale>(index); }
+    
+    template <>
+    inline auto& Entity2D::get<Tag_Rotation>(i32 index) { return g_entities.get<Tag_Rotation>(index); }
+    
+    template <>
+    inline auto& Entity2D::get<Tag_Texture>(i32 index) { return g_entities.get<Tag_Texture>(index); }
+    
+    template <>
+    inline auto& Entity2D::get<Tag_TexUV>(i32 index) { return g_entities.get<Tag_TexUV>(index);  }
+    
+    template <>
+    inline auto& Entity2D::get<Tag_Hitbox>(i32 index) { return g_entities.get<Tag_Hitbox>(index); }
+
+    template <>
+    inline auto& Entity2D::get<Tag_Type>(i32 index) { return g_entities.get<Tag_Type>(index); }
+    
+
+    /* WITHOUT PARAMENTS SPARSE EVERYTIME */
+    template <>
+    inline auto Entity2D::get_val<Tag_Type>() const { return g_entities.get_val<Tag_Type>(g_entities.get_val<Entity2D>(*(this))); }
+
+    template <>
+    inline auto Entity2D::get_val<Tag_Hitbox>() const { return g_entities.get_val<Tag_Hitbox>(g_entities.get_val<Entity2D>(*(this))); }
+
+    template <>
+    inline auto& Entity2D::get<Tag_Position>() { return g_entities.get<Tag_Position>(g_entities.get_val<Entity2D>(*(this))); }
+
+    template <>
+    inline auto& Entity2D::get<Tag_Scale>() { return g_entities.get<Tag_Scale>(g_entities.get_val<Entity2D>(*(this))); }
+
+    template <>
+    inline auto& Entity2D::get<Tag_Rotation>() { return g_entities.get<Tag_Rotation>(g_entities.get_val<Entity2D>(*(this))); }
+
+    template <>
+    inline auto& Entity2D::get<Tag_Texture>() { return g_entities.get<Tag_Texture>(g_entities.get_val<Entity2D>(*(this))); }
+
+    template <>
+    inline auto& Entity2D::get<Tag_TexUV>() { return g_entities.get<Tag_TexUV>(g_entities.get_val<Entity2D>(*(this)));  }
+
+    template <>
+    inline auto& Entity2D::get<Tag_Type>() { return g_entities.get<Tag_Type>(g_entities.get_val<Entity2D>(*(this))); }
+
+    template <>
+    inline auto& Entity2D::get<Tag_Hitbox>() { return g_entities.get<Tag_Hitbox>(g_entities.get_val<Entity2D>(*(this))); }
 
 
     /* Entity2DGroup */

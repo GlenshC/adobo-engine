@@ -15,6 +15,8 @@ namespace renderer
     void init(void);
     void draw_test_triangle();
     void init_test_triangle();
+    void init_shape_renderer();
+    void draw_shape_rect(adobo::vec4f &rect, const mat4 projection);
 }
 /*     
     // TODO: for complex 2D draws 
