@@ -1,7 +1,14 @@
 #pragma once
 
 #include <cstdint>
+#include <type_traits>
 #include "ggb/types.h"
+
+template <typename T>
+constexpr T all_bits_one() {
+    static_assert(std::is_integral_v<T>, "Integral type required");
+    return static_cast<T>(~static_cast<T>(0));
+}
 
 typedef uint8_t     u8;
 typedef uint16_t    u16;
@@ -54,6 +61,14 @@ namespace adobo
         {
             return (f32 *)this;
         }
+        explicit operator vec2f*()
+        {
+            return ((vec2f*)this); 
+        }
+        explicit operator vec2f&()
+        {
+            return *((vec2f*)this); 
+        }
     };
     struct vec4f
     {
@@ -72,6 +87,16 @@ namespace adobo
         {
             return (f32 *)this;
         }
+        
+        explicit operator vec3f*()
+        {
+            return ((vec3f*)this); 
+        }
+        explicit operator vec3f&()
+        {
+            return *((vec3f*)this); 
+        }
+
     };
 
     //templated

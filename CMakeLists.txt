@@ -60,8 +60,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     set(CMAKE_CXX_FLAGS_DEBUG   "-g -O0")
     set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    add_compile_options(/W4 /WX)
-    set(CMAKE_CXX_FLAGS_DEBUG   "/Od /Zi")
+    add_compile_options(/W3 /wd4576)
+    set(CMAKE_CXX_FLAGS_DEBUG   "/Od /ZI")
     set(CMAKE_CXX_FLAGS_RELEASE "/O2")
 endif()
 
@@ -90,6 +90,8 @@ add_executable(${PROJECT_NAME}
     src/game/game.cpp
     src/game/gui.cpp
     
+    src/core/adoboproj.cpp
+    src/core/editor.cpp
     src/core/entity/ecs.cpp
     src/core/app.cpp
     src/core/platform.cpp
@@ -101,14 +103,18 @@ add_executable(${PROJECT_NAME}
     src/renderer/sprite2D.cpp
     src/renderer/renderer.cpp
 
-    src/res/graphics/texture.cpp
-    src/res/graphics/shader.cpp
+    src/renderer/texture.cpp
+    src/renderer/shader.cpp
     
     src/util/mem_arena.cpp
     src/util/string.cpp
     src/util/debug_state.cpp
 
     vendor/binassets/src/binasset_read.cpp
+    vendor/binassets/src/binasset_json.cpp
+    vendor/binassets/src/binasset_stl_read.cpp
+    vendor/aiekick/ImGuiFileDialog.cpp
+    vendor/nlohmann/tinyxml2.cpp
 )
     
     
@@ -142,9 +148,14 @@ if (NOT BUILD_CLI)
     )
 endif()
 
+set_target_properties(testapp PROPERTIES
+    VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+)
+
 target_include_directories(${PROJECT_NAME} PRIVATE
     src
     include
+    vendor
     vendor/imgui
     vendor/imgui/backends
     vendor/glad/include

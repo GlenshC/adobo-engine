@@ -1,5 +1,7 @@
 {
     "files.associations": {
+        "*.h": "cpp",
+        "TODO": "plaintext",
         "app.h": "c",
         "stddef.h": "c",
         "string.h": "c",
@@ -111,9 +113,10 @@
         "xtr1common": "cpp",
         "xtree": "cpp",
         "xutility": "cpp",
-        "types.h": "cpp"
+        "types.h": "cpp",
+        "regex": "cpp"
     },
     "C_Cpp.default.compilerPath": "clang",
-    "explorer.sortOrder": "type"
+    "explorer.sortOrder": "default"
 
 }

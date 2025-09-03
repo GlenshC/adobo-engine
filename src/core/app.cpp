@@ -5,9 +5,12 @@
 #include "core/game.h"
 #include "core/clock.h"
 #include "core/gui.h"
+#include "core/entity/ecs.h"
 
 #include "renderer/renderer.h"
-#include "res/graphics/shader.h"
+#include "renderer/sprite2D.h"
+#include "renderer/shader.h"
+#include "renderer/texture.h"
 
 #include "util/debug.h"
 #include <thread>
@@ -21,6 +24,10 @@ namespace core
         
         clk::init();
         renderer::init();
+        renderer::init_SpritesManager();
+        ecs::init_Entity2DManager();
+        texture::init_TextureManager();
+        
         game::init();
         gui::init();
         
@@ -37,12 +44,11 @@ namespace core
             game::update(clk::g_time.delta);
             
             //test
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
             
             game::render();
             gui::render();
            
-            glFinish();
+            // glFinish();
             plat::swap_buffers();
             plat::poll_events();
         }

@@ -1,6 +1,12 @@
 # Prerequisites
 build/
+out/
+.vs/
 .cache/
+
+todo
+notes
+casset.bat
 
 *.d
 

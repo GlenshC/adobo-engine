@@ -8,14 +8,16 @@
 #include "core/platform.h"
 #include "core/clock.h"
 #include "core/gui.h"
-#include "core/game.h"
+#include "core/game.h"\
 
 #include <cmath>
+
+
 
 namespace gui
 {
     static ImGuiIO *io;
-    static void RenderDebugOverlay(void);
+    void RenderDebugOverlay(void);
 
     void display_gui(void) {
     }
@@ -25,7 +27,7 @@ namespace gui
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         io = &ImGui::GetIO();
-        // io->IniFilename = nullptr; // enable to disable imgui.ini
+        io->IniFilename = "adobo_editor.ini"; // enable to disable imgui.ini
         io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         io->FontGlobalScale = 1.7f;
         // io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
@@ -68,7 +70,7 @@ namespace gui
         ImGui::DestroyContext();
     }
 
-    __attribute__((unused)) static void RenderDebugOverlay(void)
+    void RenderDebugOverlay(void)
     {
         static f32 time_e = 0;
         static f32 fps_imgui = 0;

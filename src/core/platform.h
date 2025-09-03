@@ -13,6 +13,7 @@ namespace plat {
     typedef struct GLFWwindow *Window;
     typedef void FBUFFERCBFUNC(int width, int height);
     typedef void MOUSEBTNCBFUNC(int button, int action, int mods);
+    typedef void KEYBOARDCBFUNC(int key, int scancode, int action, int mods);
     enum CURSOR_STATE {
         ADOBO_CURSOR_NORMAL,
         ADOBO_CURSOR_DISABLED,
@@ -34,8 +35,10 @@ namespace plat {
 
     f64     get_time(void);
     void    set_vsync(bool enabled);
+    
     void    set_framebuffer_cb(FBUFFERCBFUNC *funcptr);
     void    set_mousebtn_cb(MOUSEBTNCBFUNC *funcptr);
+    void    set_keyboard_cb(KEYBOARDCBFUNC *funcptr);
 
     void    sleep(double delay);
     void    cursor_clamp();
@@ -45,9 +48,10 @@ namespace plat {
     /* TYPE DEFS */
     struct WindowInfo
     {
-        GLFWwindow    *handle    = nullptr;
-        FBUFFERCBFUNC *fbuf_cbfunc = nullptr;
+        GLFWwindow     *handle    = nullptr;
+        FBUFFERCBFUNC  *fbuf_cbfunc = nullptr;
         MOUSEBTNCBFUNC *mbtn_cbfunc = nullptr;
+        KEYBOARDCBFUNC *keyboard_cbfunc = nullptr;
         
         adobo::vec2<f64> raw_mpos;
         adobo::vec2<f64> mpos;
