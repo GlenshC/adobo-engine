@@ -4,6 +4,10 @@ out/
 .vs/
 .cache/
 
+todo
+notes
+casset.bat
+
 *.d
 
 # Compiled Object files

@@ -133,15 +133,15 @@ namespace ecs
     {
         // Compute entity top-left (world space)
         adobo::vec2f ent_topleft = {
-            ent_pos.x - (ent_scale.x),
-            ent_pos.y - (ent_scale.y)
+            ent_pos.x - (0.5f * ent_scale.x),
+            ent_pos.y - (0.5f * ent_scale.y)
         };
 
         for (int i = 0; i < aabb.size; i++)
         {
             // Build world-space rect
-            float rx = ent_topleft.x + aabb.data[i].x * ent_scale.x;
-            float ry = ent_topleft.y + aabb.data[i].y * ent_scale.y;
+            float rx = ent_topleft.x + aabb.data[i].x * aabb.data[i].z * ent_scale.x;
+            float ry = ent_topleft.y + aabb.data[i].y * aabb.data[i].w * ent_scale.y;
             float rw = aabb.data[i].z * ent_scale.x;
             float rh = aabb.data[i].w * ent_scale.y;
 

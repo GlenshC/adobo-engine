@@ -1,49 +1,54 @@
-/*
-    //header
-    "adoboproj"
+# Lemon Game Editor
 
-    i32 num_atlas
-    i32 num_shader
-    i32 num_scenes
-    i32 num_hitboxaabb
-    i32 num_hitboxcircle
-    i32 num_total_entities
-    i32 num_total_path_size // atlas and shdaer path size only
+A C++ game editor built with Dear ImGui, supporting entity, scene, and asset management for 2D games.
 
-    // metadata
-    i32[] n_entities;
-    i32[] atlas_file_path_size
-    i32[] shader_file_path_size
-    i32[] n_subhbaabb;
-    i32[] n_subhbcircle;
-    
-    // data
-    char[32] project_name
+## Features
 
-    // per scene
-    [] char[32] scene_name
-    
-    [] {
-        char[32] name;
-        vec3f    position;
-        vec2f    scale;
-        vec3f    rotation;
-        i32      tex_index;
-        i32      subtex_index;
-        i32      type;
-    }
+- Entity creation and editing
+- Scene management (create, delete, switch)
+- Hitbox editing (AABB and Circle)
+- Asset browser for textures and atlases
+- Project save/load functionality
 
-    // TODO IMPLEMENT
-    [] hitboxesAABB {
-        vec4f[] subhitbox
-    }
-    [] hitboxCircle{
-        vec3f[] subhitbox
-    }
+## Folder Structure
 
-    [] char[32] atlas_name
-    [] char[32] shader_name
-    str[] atlas_file_path
-    str[] shader_file_path
+```
+assets/         # Game assets (shaders, sprites, atlases)
+build/          # Build output
+example/        # Example game code
+include/        # Header files
+src/            # Source code (core logic in src/core/)
+vendor/         # Third-party libraries (imgui, cglm, etc.)
+.vscode/        # VSCode settings
+```
 
-*/
+## Getting Started
+
+1. **Dependencies:**  
+   - [Dear ImGui](vendor/imgui/)  
+   - [cglm](vendor/cglm/)  
+   - [GLFW](vendor/GLFW/)  
+   - [glad](vendor/glad/)  
+   - [ImGuiFileDialog](vendor/aiekick/ImGuiFileDialog/)
+
+2. **Build:**  
+   Use `build.bat` or your preferred CMake/Makefile setup.
+
+3. **Run:**  
+   Launch `testapp.exe` or your built executable.
+
+## Usage
+
+- Use the GUI to create scenes and entities.
+- Assign textures and hitboxes to entities.
+- Save and load projects using the asset browser.
+
+## Code Reference
+
+- Main editor logic: [`editor.cpp`](src/core/editor.cpp)
+- Entity system: [`ecs.h`](src/core/entity/ecs.h)
+- Asset management: [`binasset_stl_read.h`](src/binassets/binasset_stl_read.h)
+
+## License
+
+See [LICENSE](LICENSE) for details.

@@ -168,7 +168,7 @@ namespace editor
                 DEBUG_LOG("Creating HitboxAABB\n");
                 ecs::HitboxAABB &aabb = ecs::create_hitbox<ecs::HITBOX_TYPE_AABB>(ent_hitbox);
 
-                aabb.emplace_back(0.5f, 0.5f, 1.0f, 1.0f);
+                aabb.emplace_back(0, 0, 1.0f, 1.0f);
                 DEBUG_LOG("Created HitboxAABB\n");
             } 
             else
@@ -176,7 +176,7 @@ namespace editor
                 DEBUG_LOG("Creating HitboxCircle\n");
                 ecs::HitboxCircle &circle = ecs::create_hitbox<ecs::HITBOX_TYPE_CIRCLE>(ent_hitbox);
                 
-                circle.emplace_back(0.25f, 0.25f, 0.5f);
+                circle.emplace_back(0, 0, 1.0f);
                 DEBUG_LOG("Created HitboxCircle\n");
             }
             ent.m_hitbox_index = project.m_hitboxes.size();
@@ -211,15 +211,21 @@ namespace editor
     void draw_submit_ent_hitbox(ecs::HitboxAABB &aabb, const adobo::vec3f &ent_pos, const adobo::vec2f &ent_scale)
     {
         adobo::vec4f rect;
-        adobo::vec2f ent_topleft = {ent_pos.x - (0.5f * ent_scale.x), ent_pos.y - (0.5f * ent_scale.y)};
+
+        // Parent top-left (because ent_pos is center)
+        float parent_tl_x = ent_pos.x - 0.5f * ent_scale.x;
+        float parent_tl_y = ent_pos.y - 0.5f * ent_scale.y;
 
         for (int i = 0; i < aabb.size; i++)
         {
-            rect.x = ent_topleft.x + aabb.data[i].x * ent_scale.x;
-            rect.y = ent_topleft.y + aabb.data[i].y * ent_scale.y;
+            // Position relative to parent top-left
+            rect.x = parent_tl_x + aabb.data[i].x * ent_scale.x;
+            rect.y = parent_tl_y + aabb.data[i].y * ent_scale.y;
+
+            // Size relative to parent size
             rect.z = aabb.data[i].z * ent_scale.x;
             rect.w = aabb.data[i].w * ent_scale.y;
-            
+
             draw_rect_buffer.emplace_back(rect);
         }
     }
@@ -608,7 +614,7 @@ namespace editor
                         if (ImGui::Button("Create SubHitbox"))
                         {
                             rect_index = aabb.size; 
-                            aabb.emplace_back(0.5f, 0.5f, 1.0f, 1.0f);
+                            aabb.emplace_back(0, 0, 1.0f, 1.0f);
                         }
                         component_input_int("SubIndex", &rect_index, -1, aabb.size);
                         if (aabb.size && rect_index >= 0 && rect_index < aabb.size)
