@@ -1,54 +1,81 @@
-# Lemon Game Editor
+# Adobo Game Engine
 
-A C++ game editor built with Dear ImGui, supporting entity, scene, and asset management for 2D games.
+## Overview
+
+Lemon Game Engine is a modular 2D/3D engine written in C, designed for rapid development and prototyping. It uses OpenGL for rendering, GLFW for window/input management, and GLAD for OpenGL loading. The engine is organized for flexibility, making it easy to extend or integrate into your own projects.
 
 ## Features
 
-- Entity creation and editing
-- Scene management (create, delete, switch)
-- Hitbox editing (AABB and Circle)
-- Asset browser for textures and atlases
-- Project save/load functionality
-
-## Folder Structure
-
-```
-assets/         # Game assets (shaders, sprites, atlases)
-build/          # Build output
-example/        # Example game code
-include/        # Header files
-src/            # Source code (core logic in src/core/)
-vendor/         # Third-party libraries (imgui, cglm, etc.)
-.vscode/        # VSCode settings
-```
+- Modular architecture for 2D and 3D games
+- Entity Component System (ECS)
+- Scene and asset management
+- OpenGL-based renderer (sprite batching, shaders, textures)
+- Built-in editor with ImGui integration
+- Collision detection (AABB, Circle)
+- Cross-platform support (Windows, Linux, macOS)
+- CMake-based build system
 
 ## Getting Started
 
-1. **Dependencies:**  
-   - [Dear ImGui](vendor/imgui/)  
-   - [cglm](vendor/cglm/)  
-   - [GLFW](vendor/GLFW/)  
-   - [glad](vendor/glad/)  
-   - [ImGuiFileDialog](vendor/aiekick/ImGuiFileDialog/)
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/yourusername/lemon-game.git
+   cd lemon-game
+   ```
 
-2. **Build:**  
-   Use `build.bat` or your preferred CMake/Makefile setup.
+2. **Install dependencies:**
+   - [GLFW](https://www.glfw.org/)
+   - [GLAD](https://glad.dav1d.de/)
+   - [CMake](https://cmake.org/)
+   - [cglm](https://github.com/recp/cglm)
+   - [Dear ImGui](https://github.com/ocornut/imgui)
 
-3. **Run:**  
-   Launch `testapp.exe` or your built executable.
+   *(Most dependencies are included in the `vendor/` folder.)*
 
-## Usage
+3. **Explore the source code:**
+   - Main entry: `src/main.cpp`
+   - Core engine: `src/core/`
+   - Renderer: `src/renderer/`
+   - Utilities: `src/util/`
+   - Game logic: `src/game/`
 
-- Use the GUI to create scenes and entities.
-- Assign textures and hitboxes to entities.
-- Save and load projects using the asset browser.
+## Build Instructions
 
-## Code Reference
+### Using CMake
 
-- Main editor logic: [`editor.cpp`](src/core/editor.cpp)
-- Entity system: [`ecs.h`](src/core/entity/ecs.h)
-- Asset management: [`binasset_stl_read.h`](src/binassets/binasset_stl_read.h)
+**Windows (MSVC):**
+```bash
+cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+cmake --build build --config Release
+```
 
-## License
+**Linux/macOS (GCC/Clang):**
+```bash
+cmake -S . -B build
+cmake --build build --config Release
+```
 
-See [LICENSE](LICENSE) for details.
+**MinGW/Clang (Windows):**
+```bash
+make release
+```
+
+### Run the Engine
+
+After building, run the executable from the `build/` directory:
+```bash
+./testapp
+```
+
+## Roadmap
+
+- Refactor asset loading and memory management
+- Add runtime loader and hot-reloading
+- Expand physics and collision systems
+- Improve editor features and usability
+- Add support for more file formats (JSON, XML)
+- Enhance documentation and code samples
+
+---
+
+*For issues, suggestions, or contributions, please open a pull request or issue on GitHub.*
